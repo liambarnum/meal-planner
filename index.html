@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Meal Planner</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-title">Meal Planner</div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-page="planner">Meal Planner</button>
+      <button class="nav-tab" data-page="grocery">Grocery List</button>
+    </nav>
+  </header>
+
+  <!-- Meal Planner Page -->
+  <div id="page-planner">
+    <div class="day-tabs" id="day-tabs"></div>
+    <div class="main-content" id="planner-content"></div>
+  </div>
+
+  <!-- Grocery List Page -->
+  <div id="page-grocery" style="display:none">
+    <div class="main-content" id="grocery-content"></div>
+  </div>
+
+  <!-- Assignment Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-title" id="modal-title">Assign Meal</div>
+      <label for="modal-day">Day</label>
+      <select id="modal-day">
+        <option value="Sun">Sunday</option>
+        <option value="Mon">Monday</option>
+        <option value="Tue">Tuesday</option>
+        <option value="Wed">Wednesday</option>
+        <option value="Thu">Thursday</option>
+        <option value="Fri">Friday</option>
+        <option value="Sat">Saturday</option>
+      </select>
+      <label for="modal-slot">Meal Slot</label>
+      <select id="modal-slot">
+        <option value="Breakfast">Breakfast</option>
+        <option value="Lunch">Lunch</option>
+        <option value="Snack">Snack</option>
+        <option value="Dinner">Dinner</option>
+        <option value="Dessert">Dessert</option>
+      </select>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="modal-confirm">Assign</button>
+        <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Chat FAB -->
+  <button class="chat-fab" id="chat-fab" title="AI Assistant">&#9830;</button>
+
+  <!-- AI Chat Panel -->
+  <div class="chat-panel" id="chat-panel">
+    <div class="chat-header">
+      <div class="chat-header-title">AI Assistant</div>
+      <input type="password" class="chat-api-key" id="chat-api-key"
+             placeholder="Enter Anthropic API key..." autocomplete="off">
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input type="text" class="chat-input" id="chat-input"
+             placeholder="Ask about meals, macros, or changes...">
+      <button class="chat-send" id="chat-send">Send</button>
+    </div>
+  </div>
+
+  <script src="meals.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
