@@ -1,58 +1,11 @@
 /* ─── NUTRITION MODULE ─── */
-/* USDA FoodData Central integration, nutrition label rendering, warning system */
-
-// USDA FoodData Central API key — free public API, no auth required beyond this key.
-// DEMO_KEY allows ~30 req/hr. Users can get their own free key at https://fdc.nal.usda.gov/api-key-signup
-// for 1000 req/hr, and set it in the chat panel.
-const USDA_API_KEY_DEFAULT = 'DEMO_KEY';
-
-function getUsdaApiKey() {
-  return (typeof state !== 'undefined' && state.usdaApiKey) || USDA_API_KEY_DEFAULT;
-}
+/* Static nutrition data and FDA-format label rendering */
 
 const NUTRITION_FIELDS = [
   'calories', 'totalFat', 'saturatedFat', 'transFat', 'cholesterol',
   'sodium', 'totalCarbs', 'dietaryFiber', 'totalSugars', 'addedSugars',
   'protein', 'vitaminD', 'calcium', 'iron', 'potassium'
 ];
-
-// USDA nutrient number -> our field name mapping
-const USDA_NUTRIENT_MAP = {
-  1008: 'calories',    // Energy (kcal)
-  208:  'calories',    // Energy (kcal) alternate
-  1003: 'protein',
-  203:  'protein',
-  1004: 'totalFat',
-  204:  'totalFat',
-  1258: 'saturatedFat',
-  606:  'saturatedFat',
-  1257: 'transFat',
-  605:  'transFat',
-  1253: 'cholesterol',
-  601:  'cholesterol',
-  1093: 'sodium',
-  307:  'sodium',
-  1005: 'totalCarbs',
-  205:  'totalCarbs',
-  1079: 'dietaryFiber',
-  291:  'dietaryFiber',
-  2000: 'totalSugars',
-  269:  'totalSugars',
-  1235: 'addedSugars',
-  539:  'addedSugars',
-  1110: 'vitaminD',
-  324:  'vitaminD',     // Vitamin D (IU) — convert to mcg: /40
-  328:  'vitaminD',     // Vitamin D (mcg)
-  1087: 'calcium',
-  301:  'calcium',
-  1089: 'iron',
-  303:  'iron',
-  1092: 'potassium',
-  306:  'potassium'
-};
-
-// Nutrient numbers that report Vitamin D in IU (needs /40 conversion to mcg)
-const VITAMIN_D_IU_NUMBERS = [324, 1110];
 
 // FDA Daily Reference Values (for %DV on the label)
 const DAILY_VALUES = {
@@ -91,8 +44,7 @@ const UNIT_GRAMS = {
 };
 
 // ─── STATIC NUTRITION DATA (per 100g, USDA SR Legacy reference values) ───
-// Hard-coded for all known meal ingredients so nutrition labels work offline
-// without hitting the USDA API. Values: nutrients per 100g, portions in grams.
+// Hard-coded for all known meal ingredients so nutrition labels work offline.
 
 const STATIC_NUTRITION = {
   'plain greek yogurt': {
@@ -342,244 +294,9 @@ const STATIC_NUTRITION = {
   }
 };
 
-// Seed localStorage caches from static data for all known meal ingredients
-function seedStaticNutritionData(meals) {
-  let seeded = 0;
-  const seen = new Set();
-
-  for (const meal of meals) {
-    for (const ing of (meal.ingredients || [])) {
-      const key = ing.name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      // Skip if already linked
-      if (getIngredientMapping(ing.name)) continue;
-
-      const staticEntry = STATIC_NUTRITION[key];
-      if (!staticEntry) continue;
-
-      // Build cache entry
-      const fdcId = 'static-' + key.replace(/\s+/g, '-');
-      const entry = {
-        fdcId,
-        description: staticEntry.description,
-        dataType: 'Static (USDA SR Legacy reference)',
-        fetchedAt: new Date().toISOString(),
-        nutrients: { ...staticEntry.nutrients },
-        portions: staticEntry.portions || [],
-        missingFields: []
-      };
-      setCachedNutrient(fdcId, entry);
-
-      // Compute serving grams from the ingredient's amount
-      const parsed = parseAmount(ing.amount);
-      const { grams } = convertToGrams(parsed, staticEntry.portions);
-      setIngredientMapping(ing.name, fdcId, grams);
-      seeded++;
-    }
-  }
-  if (seeded > 0) {
-    console.log(`Seeded ${seeded} ingredients from static nutrition data`);
-  }
-  return seeded;
-}
-
-// ─── NUTRITION CACHE (localStorage) ───
-
-function loadNutritionCache() {
-  try {
-    const raw = localStorage.getItem('nutritionCache');
-    if (raw) return JSON.parse(raw);
-  } catch (e) { /* ignore */ }
-  return { version: 1, ingredients: {} };
-}
-
-function saveNutritionCache(cache) {
-  localStorage.setItem('nutritionCache', JSON.stringify(cache));
-}
-
-function getCachedNutrient(fdcId) {
-  const cache = loadNutritionCache();
-  const entry = cache.ingredients[String(fdcId)];
-  if (!entry) return null;
-  // Expire after 30 days
-  const age = Date.now() - new Date(entry.fetchedAt).getTime();
-  if (age > 30 * 24 * 60 * 60 * 1000) return null;
-  return entry;
-}
-
-function setCachedNutrient(fdcId, data) {
-  const cache = loadNutritionCache();
-  cache.ingredients[String(fdcId)] = data;
-  saveNutritionCache(cache);
-}
-
-// ─── WARNING ACKNOWLEDGMENT CACHE ───
-
-function loadWarningAcks() {
-  try {
-    const raw = localStorage.getItem('nutritionWarningAcks');
-    if (raw) return JSON.parse(raw);
-  } catch (e) { /* ignore */ }
-  return { version: 1, acknowledged: {} };
-}
-
-function saveWarningAcks(acks) {
-  localStorage.setItem('nutritionWarningAcks', JSON.stringify(acks));
-}
-
-function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + ch;
-    hash |= 0;
-  }
-  return String(hash);
-}
-
-function computeWarningHash(ingredientName, nutritionData) {
-  const key = ingredientName.toLowerCase() + '|' + JSON.stringify(nutritionData || {});
-  return simpleHash(key);
-}
-
-function isWarningAcknowledged(mealId, ingredientName, nutritionData) {
-  const acks = loadWarningAcks();
-  const key = `${mealId}:${ingredientName.toLowerCase()}`;
-  const stored = acks.acknowledged[key];
-  if (!stored) return false;
-  return stored === computeWarningHash(ingredientName, nutritionData);
-}
-
-function acknowledgeWarnings(mealId, warnings) {
-  const acks = loadWarningAcks();
-  for (const w of warnings) {
-    const key = `${mealId}:${w.ingredientName.toLowerCase()}`;
-    acks.acknowledged[key] = computeWarningHash(w.ingredientName, w.nutritionData);
-  }
-  saveWarningAcks(acks);
-}
-
-// ─── GLOBAL INGREDIENT MAP ───
-
-function loadIngredientMap() {
-  try {
-    const raw = localStorage.getItem('nutritionIngredientMap');
-    if (raw) return JSON.parse(raw);
-  } catch (e) { /* ignore */ }
-  return {};
-}
-
-function saveIngredientMap(map) {
-  localStorage.setItem('nutritionIngredientMap', JSON.stringify(map));
-}
-
-function getIngredientMapping(ingredientName) {
-  const map = loadIngredientMap();
-  return map[ingredientName.toLowerCase()] || null;
-}
-
-function setIngredientMapping(ingredientName, fdcId, servingGrams) {
-  const map = loadIngredientMap();
-  map[ingredientName.toLowerCase()] = { fdcId, servingGrams };
-  saveIngredientMap(map);
-}
-
-// ─── USDA API CLIENT ───
-
-async function searchUSDA(query, apiKey, dataTypes) {
-  const types = dataTypes || ['Foundation', 'SR Legacy'];
-  const key = apiKey || getUsdaApiKey();
-  const url = 'https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + encodeURIComponent(key);
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: query,
-      dataType: types,
-      pageSize: 5,
-      sortBy: 'dataType.keyword'
-    })
-  });
-  if (!resp.ok) {
-    if (resp.status === 429) {
-      throw new Error('RATE_LIMITED');
-    }
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `USDA API error ${resp.status}`);
-  }
-  const data = await resp.json();
-  return (data.foods || []).map(f => ({
-    fdcId: f.fdcId,
-    description: f.description,
-    dataType: f.dataType,
-    nutrients: f.foodNutrients || []
-  }));
-}
-
-async function fetchNutrientsByFdcId(fdcId, apiKey) {
-  // Check cache first
-  const cached = getCachedNutrient(fdcId);
-  if (cached) return cached;
-
-  const key = apiKey || getUsdaApiKey();
-  const url = `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${encodeURIComponent(key)}`;
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    // Non-fatal: return null so caller can skip this ingredient
-    console.warn(`USDA detail fetch failed for fdcId ${fdcId}: ${resp.status}`);
-    return null;
-  }
-  const data = await resp.json();
-
-  // Extract nutrients
-  const nutrients = {};
-  NUTRITION_FIELDS.forEach(f => { nutrients[f] = null; });
-
-  for (const fn of (data.foodNutrients || [])) {
-    const num = fn.nutrient?.number ? parseInt(fn.nutrient.number) : (fn.number || fn.nutrientNumber);
-    const field = USDA_NUTRIENT_MAP[num];
-    if (field && nutrients[field] === null) {
-      let value = fn.amount ?? fn.value ?? null;
-      if (value !== null && VITAMIN_D_IU_NUMBERS.includes(num)) {
-        value = value / 40; // Convert IU to mcg
-      }
-      nutrients[field] = value;
-    }
-  }
-
-  // Extract portions
-  const portions = (data.foodPortions || []).map(p => ({
-    description: (p.portionDescription || p.modifier || p.measureUnit?.name || '').toLowerCase(),
-    gramWeight: p.gramWeight || 0,
-    amount: p.amount || 1
-  })).filter(p => p.gramWeight > 0);
-
-  // Determine missing fields (exclude transFat and addedSugars — handled by disclaimer)
-  const disclaimerFields = ['transFat', 'addedSugars'];
-  const missingFields = NUTRITION_FIELDS.filter(f =>
-    !disclaimerFields.includes(f) && nutrients[f] === null
-  );
-
-  const entry = {
-    fdcId,
-    description: data.description || '',
-    dataType: data.dataType || '',
-    fetchedAt: new Date().toISOString(),
-    nutrients,
-    portions,
-    missingFields
-  };
-
-  setCachedNutrient(fdcId, entry);
-  return entry;
-}
-
 // ─── PORTION PARSING ───
 
 function parseFraction(str) {
-  // Handle unicode fractions
   const unicodeFractions = { '¼': 0.25, '½': 0.5, '¾': 0.75, '⅓': 0.333, '⅔': 0.667, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875 };
   for (const [ch, val] of Object.entries(unicodeFractions)) {
     if (str.includes(ch)) {
@@ -587,7 +304,6 @@ function parseFraction(str) {
       return (rest ? parseFloat(rest) : 0) + val;
     }
   }
-  // Handle "1/2" style fractions
   if (str.includes('/')) {
     const parts = str.split('/');
     if (parts.length === 2) {
@@ -602,16 +318,11 @@ function parseFraction(str) {
 
 function parseAmount(amountStr) {
   if (!amountStr) return { quantity: 1, unit: '' };
-
   const str = amountStr.trim().toLowerCase();
-  // Match patterns like "1 cup", "1/2 cup", "1.5 oz", "6 spears", "1 medium", "2 large"
   const match = str.match(/^([\d\s\/¼½¾⅓⅔⅛⅜⅝⅞.]+)\s*(.*)$/);
   if (!match) return { quantity: 1, unit: str };
-
   const quantityStr = match[1].trim();
   let unit = match[2].trim();
-
-  // Handle compound like "1 1/2" -> split on space
   let quantity;
   const spaceParts = quantityStr.split(/\s+/);
   if (spaceParts.length === 2) {
@@ -619,30 +330,28 @@ function parseAmount(amountStr) {
   } else {
     quantity = parseFraction(quantityStr);
   }
-
   return { quantity, unit };
 }
 
 function convertToGrams(parsedAmount, portions) {
   const { quantity, unit } = parsedAmount;
-  let estimated = false;
 
-  // Try matching USDA portions first
+  // Try matching portions first
   if (portions && portions.length > 0) {
     for (const p of portions) {
       if (p.description && unit && (p.description.includes(unit) || unit.includes(p.description))) {
-        return { grams: quantity * (p.gramWeight / p.amount), estimated: false };
+        return { grams: quantity * (p.gramWeight / p.amount) };
       }
     }
   }
 
-  // Fallback to our conversion table
+  // Fallback to conversion table
   if (unit && UNIT_GRAMS[unit]) {
-    return { grams: quantity * UNIT_GRAMS[unit], estimated: true };
+    return { grams: quantity * UNIT_GRAMS[unit] };
   }
 
   // Last resort: assume 100g per unit
-  return { grams: quantity * 100, estimated: true };
+  return { grams: quantity * 100 };
 }
 
 // ─── MEAL NUTRITION COMPUTATION ───
@@ -651,64 +360,23 @@ function computeMealNutrition(meal) {
   const totals = {};
   NUTRITION_FIELDS.forEach(f => { totals[f] = 0; });
   let totalGrams = 0;
-  const warnings = [];
   let hasAnyNutritionData = false;
 
   for (const ing of (meal.ingredients || [])) {
-    const mapping = getIngredientMapping(ing.name);
-    if (!mapping) {
-      warnings.push({
-        ingredientName: ing.name,
-        type: 'no-usda-data',
-        fields: [],
-        source: 'none',
-        message: `No USDA data linked for "${ing.name}". Use the AI assistant to look up and assign an FDC ID.`,
-        nutritionData: null
-      });
-      continue;
-    }
-
-    const cached = getCachedNutrient(mapping.fdcId);
-    if (!cached) {
-      warnings.push({
-        ingredientName: ing.name,
-        type: 'not-fetched',
-        fields: [],
-        source: 'none',
-        message: `Nutrition data for "${ing.name}" has not been fetched yet. Open the nutrition label to trigger a fetch.`,
-        nutritionData: null
-      });
-      continue;
-    }
+    const key = ing.name.toLowerCase();
+    const staticEntry = STATIC_NUTRITION[key];
+    if (!staticEntry) continue;
 
     hasAnyNutritionData = true;
     const parsed = parseAmount(ing.amount);
-    const { grams, estimated } = convertToGrams(parsed, cached.portions);
-    const scale = grams / 100; // USDA data is per 100g
+    const { grams } = convertToGrams(parsed, staticEntry.portions);
+    const scale = grams / 100; // static data is per 100g
     totalGrams += grams;
 
     for (const field of NUTRITION_FIELDS) {
-      if (cached.nutrients[field] !== null) {
-        totals[field] += cached.nutrients[field] * scale;
+      if (staticEntry.nutrients[field] !== null && staticEntry.nutrients[field] !== undefined) {
+        totals[field] += staticEntry.nutrients[field] * scale;
       }
-    }
-
-    // Build warnings (exclude transFat and addedSugars — they get a general disclaimer)
-    const disclaimerFields = ['transFat', 'addedSugars'];
-    const missing = (cached.missingFields || []).filter(f => !disclaimerFields.includes(f));
-
-    if (missing.length > 0 || estimated) {
-      const parts = [];
-      if (missing.length > 0) parts.push(`Missing fields from USDA: ${missing.join(', ')}`);
-      if (estimated) parts.push('Serving size was estimated using standard conversions (not USDA portion data)');
-      warnings.push({
-        ingredientName: ing.name,
-        type: missing.length > 0 ? 'missing-fields' : 'portion-estimated',
-        fields: missing,
-        source: cached.dataType || 'USDA',
-        message: parts.join('. '),
-        nutritionData: cached.nutrients
-      });
     }
   }
 
@@ -717,20 +385,7 @@ function computeMealNutrition(meal) {
     totals[field] = Math.round(totals[field] * 10) / 10;
   }
 
-  return { totals, warnings, servingSizeGrams: Math.round(totalGrams), hasAnyNutritionData };
-}
-
-// ─── WARNING HELPERS ───
-
-function getMealWarnings(meal) {
-  const { warnings } = computeMealNutrition(meal);
-  return warnings;
-}
-
-function hasUnacknowledgedWarnings(meal) {
-  const warnings = getMealWarnings(meal);
-  if (warnings.length === 0) return false;
-  return warnings.some(w => !isWarningAcknowledged(meal.id, w.ingredientName, w.nutritionData));
+  return { totals, servingSizeGrams: Math.round(totalGrams), hasAnyNutritionData };
 }
 
 // ─── NUTRITION LABEL RENDERING ───
@@ -751,27 +406,28 @@ function calcDV(field, value) {
   return Math.round((value / dv) * 100);
 }
 
-function renderNutritionLabel(meal, options = {}) {
-  const { totals, warnings, servingSizeGrams, hasAnyNutritionData } = computeMealNutrition(meal);
+function renderNutritionLabel(meal) {
+  const { totals, servingSizeGrams, hasAnyNutritionData } = computeMealNutrition(meal);
 
-  const unackWarnings = warnings.filter(w =>
-    !isWarningAcknowledged(meal.id, w.ingredientName, w.nutritionData)
-  );
-
-  function row(label, field, indent, bold, thickLine) {
+  function row(label, field, indent, bold) {
     const val = totals[field];
     const display = formatNutrientValue(field, val);
     const dv = calcDV(field, val);
     const dvStr = dv !== null ? `<span class="nf-dv">${dv}%</span>` : '';
-    const cls = [
-      indent ? 'nf-indent' : '',
-      bold ? 'nf-bold' : '',
-      thickLine ? 'nf-thick-top' : ''
-    ].filter(Boolean).join(' ');
+    const cls = [indent ? 'nf-indent' : '', bold ? 'nf-bold' : ''].filter(Boolean).join(' ');
     return `<div class="nf-row ${cls}"><span>${label} ${display}</span>${dvStr}</div>`;
   }
 
-  const labelHTML = `
+  if (!hasAnyNutritionData) {
+    return `
+      <div class="nf-no-data">
+        <div class="nf-no-data-title">No Nutrition Data Available</div>
+        <div class="nf-no-data-text">Nutrition data is not available for this meal's ingredients.</div>
+      </div>
+    `;
+  }
+
+  return `
     <div class="nutrition-label">
       <div class="nf-title">Nutrition Facts</div>
       <div class="nf-thick-bar"></div>
@@ -786,291 +442,51 @@ function renderNutritionLabel(meal, options = {}) {
       <div class="nf-medium-bar"></div>
       <div class="nf-dv-header"><span class="nf-dv">% Daily Value*</span></div>
       <div class="nf-thin-line"></div>
-      ${row('Total Fat', 'totalFat', false, true, false)}
+      ${row('Total Fat', 'totalFat', false, true)}
       <div class="nf-thin-line"></div>
-      ${row('Saturated Fat', 'saturatedFat', true, false, false)}
+      ${row('Saturated Fat', 'saturatedFat', true, false)}
       <div class="nf-thin-line"></div>
-      ${row('Trans Fat', 'transFat', true, false, false)}
+      ${row('Trans Fat', 'transFat', true, false)}
       <div class="nf-thin-line"></div>
-      ${row('Cholesterol', 'cholesterol', false, true, false)}
+      ${row('Cholesterol', 'cholesterol', false, true)}
       <div class="nf-thin-line"></div>
-      ${row('Sodium', 'sodium', false, true, false)}
+      ${row('Sodium', 'sodium', false, true)}
       <div class="nf-thin-line"></div>
-      ${row('Total Carbohydrate', 'totalCarbs', false, true, false)}
+      ${row('Total Carbohydrate', 'totalCarbs', false, true)}
       <div class="nf-thin-line"></div>
-      ${row('Dietary Fiber', 'dietaryFiber', true, false, false)}
+      ${row('Dietary Fiber', 'dietaryFiber', true, false)}
       <div class="nf-thin-line"></div>
-      ${row('Total Sugars', 'totalSugars', true, false, false)}
+      ${row('Total Sugars', 'totalSugars', true, false)}
       <div class="nf-thin-line"></div>
-      ${row('Incl. Added Sugars', 'addedSugars', true, false, false)}
+      ${row('Incl. Added Sugars', 'addedSugars', true, false)}
       <div class="nf-thin-line"></div>
-      ${row('Protein', 'protein', false, true, false)}
+      ${row('Protein', 'protein', false, true)}
       <div class="nf-thick-bar"></div>
-      ${row('Vitamin D', 'vitaminD', false, false, false)}
+      ${row('Vitamin D', 'vitaminD', false, false)}
       <div class="nf-thin-line"></div>
-      ${row('Calcium', 'calcium', false, false, false)}
+      ${row('Calcium', 'calcium', false, false)}
       <div class="nf-thin-line"></div>
-      ${row('Iron', 'iron', false, false, false)}
+      ${row('Iron', 'iron', false, false)}
       <div class="nf-thin-line"></div>
-      ${row('Potassium', 'potassium', false, false, false)}
+      ${row('Potassium', 'potassium', false, false)}
       <div class="nf-medium-bar"></div>
       <div class="nf-footnote">* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.</div>
-      <div class="nf-disclaimer">
-        <div class="nf-disclaimer-title">General Disclaimer</div>
-        <div class="nf-disclaimer-text">Trans Fat and Added Sugars values may not be available from the USDA Foundation Foods or SR Legacy databases. When shown as "---", these values were not reported by USDA for one or more ingredients. Branded food data or product labels may provide more accurate values for these fields.</div>
-      </div>
     </div>
   `;
-
-  let warningsHTML = '';
-  if (unackWarnings.length > 0) {
-    const warningItems = unackWarnings.map(w => `
-      <div class="nf-warning-item">
-        <span class="nf-warning-icon">&#9888;</span>
-        <div>
-          <div class="nf-warning-name">${esc(w.ingredientName)}</div>
-          <div class="nf-warning-msg">${esc(w.message)}</div>
-          ${w.source !== 'none' ? `<div class="nf-warning-source">Source: ${esc(w.source)}</div>` : ''}
-        </div>
-      </div>
-    `).join('');
-
-    warningsHTML = `
-      <div class="nf-warnings">
-        <div class="nf-warnings-title">Data Warnings</div>
-        ${warningItems}
-        <div class="nf-warnings-note">You can manually enter correct nutrition info via the AI Assistant chat. Tell it the ingredient name and correct values, and it will update the data.</div>
-        <button class="nf-ack-btn" id="nf-acknowledge-btn">I Understand</button>
-      </div>
-    `;
-  }
-
-  if (!hasAnyNutritionData) {
-    if (options && options.loading) {
-      return `
-        <div class="nf-no-data">
-          <div class="nf-no-data-icon">&#9888;</div>
-          <div class="nf-no-data-title">Loading Nutrition Data...</div>
-          <div class="nf-no-data-text">Searching USDA FoodData Central for ingredient data. This may take a moment on first load.</div>
-        </div>
-      `;
-    }
-    return `
-      <div class="nf-no-data">
-        <div class="nf-no-data-icon">&#9888;</div>
-        <div class="nf-no-data-title">No Nutrition Data Available</div>
-        <div class="nf-no-data-text">Could not retrieve data from USDA FoodData Central. The API may be rate-limited (30 requests/hour). Data will be fetched automatically on your next visit.</div>
-      </div>
-    `;
-  }
-
-  return labelHTML + warningsHTML;
 }
 
-function pickBestResult(results) {
-  // Prefer SR Legacy (more reliable with DEMO_KEY), then Foundation
-  const srLegacy = results.find(r => r.dataType === 'SR Legacy');
-  if (srLegacy) return srLegacy;
-  return results[0];
-}
-
-function buildCacheFromSearchNutrients(food) {
-  // Build a cache entry from the inline nutrients in search results
-  // (less complete than detail endpoint, but works when detail returns 404)
-  const nutrients = {};
-  NUTRITION_FIELDS.forEach(f => { nutrients[f] = null; });
-
-  for (const fn of (food.nutrients || [])) {
-    const num = fn.nutrientNumber || fn.number;
-    const field = USDA_NUTRIENT_MAP[num];
-    if (field && nutrients[field] === null) {
-      let value = fn.value ?? null;
-      if (value !== null && VITAMIN_D_IU_NUMBERS.includes(num)) {
-        value = value / 40;
-      }
-      nutrients[field] = value;
-    }
-  }
-
-  const disclaimerFields = ['transFat', 'addedSugars'];
-  const missingFields = NUTRITION_FIELDS.filter(f =>
-    !disclaimerFields.includes(f) && nutrients[f] === null
-  );
-
-  return {
-    fdcId: food.fdcId,
-    description: food.description || '',
-    dataType: food.dataType || '',
-    fetchedAt: new Date().toISOString(),
-    nutrients,
-    portions: [], // search results don't include portions
-    missingFields
-  };
-}
-
-async function autoLinkIngredients(ingredients) {
-  let linked = 0;
-  for (const ing of ingredients) {
-    const existing = getIngredientMapping(ing.name);
-    if (existing) {
-      // Already linked — just make sure we have cached nutrition data
-      const cached = getCachedNutrient(existing.fdcId);
-      if (!cached) {
-        try {
-          const result = await fetchNutrientsByFdcId(existing.fdcId);
-          if (!result) {
-            // Detail fetch failed (404) — try to re-search and use inline data
-            const results = await searchUSDA(ing.name);
-            if (results.length > 0) {
-              const best = pickBestResult(results);
-              const entry = buildCacheFromSearchNutrients(best);
-              setCachedNutrient(best.fdcId, entry);
-              setIngredientMapping(ing.name, best.fdcId, existing.servingGrams);
-            }
-          }
-        } catch (e) { /* will show warning */ }
-      }
-      linked++;
-      continue;
-    }
-
-    // Search USDA for this ingredient
-    try {
-      const results = await searchUSDA(ing.name);
-      if (results.length > 0) {
-        const best = pickBestResult(results);
-        // Try detail fetch first for full data
-        const detailed = await fetchNutrientsByFdcId(best.fdcId);
-        if (!detailed) {
-          // Detail failed — use inline nutrients from search
-          const entry = buildCacheFromSearchNutrients(best);
-          setCachedNutrient(best.fdcId, entry);
-        }
-        // Parse the amount to estimate serving grams
-        const parsed = parseAmount(ing.amount);
-        const cached = getCachedNutrient(best.fdcId);
-        const { grams } = convertToGrams(parsed, cached ? cached.portions : []);
-        setIngredientMapping(ing.name, best.fdcId, grams);
-        linked++;
-      }
-    } catch (e) {
-      // Rate limited or network error — stop trying for now
-      console.warn(`USDA lookup failed for "${ing.name}":`, e.message);
-      if (e.message && (e.message.includes('RATE_LIMITED') || e.message.includes('429') || e.message.includes('OVER_RATE_LIMIT') || e.message.includes('rate limit'))) break;
-    }
-  }
-  return linked;
-}
-
-async function openNutritionModal(meal) {
+function openNutritionModal(meal) {
   const container = document.getElementById('nutrition-label-container');
   document.getElementById('nutrition-modal-meal-name').textContent = meal.name;
   document.getElementById('nutrition-overlay').classList.add('open');
-
-  // Show initial state (may be "loading" or partial data)
-  container.innerHTML = renderNutritionLabel(meal, { loading: true });
-  wireAckButton(container, meal);
-
-  // Auto-link any unlinked ingredients
-  const unlinked = (meal.ingredients || []).filter(ing => !getIngredientMapping(ing.name));
-  if (unlinked.length > 0) {
-    await autoLinkIngredients(meal.ingredients);
-    // Re-render with newly fetched data
-    container.innerHTML = renderNutritionLabel(meal, { loading: false });
-    wireAckButton(container, meal);
-    // Update badges on the planner
-    if (typeof renderPlanner === 'function') renderPlanner();
-    if (typeof renderDayTabs === 'function') renderDayTabs();
-  }
-}
-
-function wireAckButton(container, meal) {
-  const ackBtn = document.getElementById('nf-acknowledge-btn');
-  if (ackBtn) {
-    ackBtn.addEventListener('click', () => {
-      const warnings = getMealWarnings(meal);
-      acknowledgeWarnings(meal.id, warnings);
-      container.innerHTML = renderNutritionLabel(meal);
-      if (typeof renderPlanner === 'function') renderPlanner();
-      if (typeof renderDayTabs === 'function') renderDayTabs();
-    });
-  }
-}
-
-// Background auto-link: runs on app init to pre-fetch USDA data for all ingredients
-async function initNutritionData(meals) {
-  // Seed from static data first (instant, no API calls)
-  seedStaticNutritionData(meals);
-
-  // Collect all unique ingredient names that aren't linked yet
-  const seen = new Set();
-  const unlinkedIngredients = [];
-  for (const meal of meals) {
-    for (const ing of (meal.ingredients || [])) {
-      const key = ing.name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      if (!getIngredientMapping(ing.name)) {
-        unlinkedIngredients.push(ing);
-      }
-    }
-  }
-
-  if (unlinkedIngredients.length === 0) return;
-
-  // Link in batches with a small delay to avoid rate limits
-  for (let i = 0; i < unlinkedIngredients.length; i++) {
-    const ing = unlinkedIngredients[i];
-    if (getIngredientMapping(ing.name)) continue; // linked by another meal's lookup
-
-    try {
-      const results = await searchUSDA(ing.name);
-      if (results.length > 0) {
-        const best = pickBestResult(results);
-        const detailed = await fetchNutrientsByFdcId(best.fdcId);
-        if (!detailed) {
-          const entry = buildCacheFromSearchNutrients(best);
-          setCachedNutrient(best.fdcId, entry);
-        }
-        const parsed = parseAmount(ing.amount);
-        const cached = getCachedNutrient(best.fdcId);
-        const { grams } = convertToGrams(parsed, cached ? cached.portions : []);
-        setIngredientMapping(ing.name, best.fdcId, grams);
-      }
-    } catch (e) {
-      console.warn(`Background USDA lookup failed for "${ing.name}":`, e.message);
-      if (e.message && (e.message.includes('RATE_LIMITED') || e.message.includes('429') || e.message.includes('OVER_RATE_LIMIT') || e.message.includes('rate limit'))) {
-        console.warn('USDA rate limited, pausing background lookups');
-        break;
-      }
-    }
-
-    // Small delay between requests to be polite to the API
-    if (i < unlinkedIngredients.length - 1) {
-      await new Promise(r => setTimeout(r, 200));
-    }
-  }
-
-  // Re-render to update badges
-  if (typeof renderPlanner === 'function') renderPlanner();
-  if (typeof renderDayTabs === 'function') renderDayTabs();
+  container.innerHTML = renderNutritionLabel(meal);
 }
 
 function closeNutritionModal() {
   document.getElementById('nutrition-overlay').classList.remove('open');
 }
 
-function bindNutritionModal() {
-  document.getElementById('nutrition-close-btn').addEventListener('click', closeNutritionModal);
-  document.getElementById('nutrition-overlay').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeNutritionModal();
-  });
-}
-
-// ─── HELPERS ───
-
-function esc(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+// Seed static data on init — just ensures all ingredients are available
+function initNutritionData(meals) {
+  // Static data is used directly from STATIC_NUTRITION, no seeding needed
 }

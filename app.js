@@ -21,7 +21,6 @@ let state = {
   assignments: {},           // { "2026-03-31-Breakfast": "meal-id", ... }
   checkedItems: {},
   apiKey: '',
-  usdaApiKey: '',
   masterMeals: [],
   chatHistory: [],
   dateRangeStart: null,      // ISO date string
@@ -90,9 +89,6 @@ function init() {
   bindNutritionModal();
   bindNutritionDelegation();
   registerSW();
-
-  // Start background USDA data fetch for all ingredients
-  initNutritionData(state.masterMeals);
 }
 
 function loadState() {
@@ -103,7 +99,7 @@ function loadState() {
       state.assignments = parsed.assignments || {};
       state.checkedItems = parsed.checkedItems || {};
       state.apiKey = parsed.apiKey || '';
-      state.usdaApiKey = parsed.usdaApiKey || '';
+      
       state.chatHistory = parsed.chatHistory || [];
       state.dateRangeStart = parsed.dateRangeStart || null;
       state.dateRangeLength = parsed.dateRangeLength || 7;
@@ -137,7 +133,7 @@ function saveState() {
     assignments: state.assignments,
     checkedItems: state.checkedItems,
     apiKey: state.apiKey,
-    usdaApiKey: state.usdaApiKey,
+
     chatHistory: state.chatHistory,
     customMeals: customMeals,
     dateRangeStart: state.dateRangeStart,
@@ -313,7 +309,6 @@ function bindIngredientsToggle(el) {
 function createMealCard(meal) {
   const card = document.createElement('div');
   card.className = 'meal-card';
-  const hasWarning = hasUnacknowledgedWarnings(meal);
   card.innerHTML = `
     <div class="meal-card-name">${esc(meal.name)}</div>
     <div class="meal-card-desc">${esc(meal.description)}</div>
@@ -324,10 +319,7 @@ function createMealCard(meal) {
         <span class="fiber">Fb: ${meal.macros.fiber}g</span>
         <span>P: ${meal.macros.protein}g</span>
       </div>
-      <button class="nutrition-badge${hasWarning ? ' has-warning' : ''}" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">
-        NF
-        ${hasWarning ? '<span class="nutrition-warning-triangle" title="Some nutrition data needs attention">&#9888;</span>' : ''}
-      </button>
+      <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
     </div>
     ${renderIngredientsList(meal)}
   `;
@@ -388,7 +380,6 @@ function renderDayView(container, dateISO) {
     slotEl.dataset.slot = slot;
 
     if (meal) {
-      const hasWarning = hasUnacknowledgedWarnings(meal);
       slotEl.innerHTML = `
         <div class="slot-label">${slot}</div>
         <div class="slot-filled">
@@ -401,10 +392,7 @@ function renderDayView(container, dateISO) {
               <span class="fiber">Fb: ${meal.macros.fiber}g</span>
               <span>P: ${meal.macros.protein}g</span>
             </div>
-            <button class="nutrition-badge${hasWarning ? ' has-warning' : ''}" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">
-              NF
-              ${hasWarning ? '<span class="nutrition-warning-triangle" title="Some nutrition data needs attention">&#9888;</span>' : ''}
-            </button>
+            <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
           </div>
           ${renderIngredientsList(meal)}
           <button class="slot-remove" title="Remove meal">&times;</button>
@@ -715,19 +703,11 @@ function bindChat() {
   const sendBtn = document.getElementById('chat-send');
   const apiKeyInput = document.getElementById('chat-api-key');
 
-  const usdaKeyInput = document.getElementById('usda-api-key');
-
   if (state.apiKey) apiKeyInput.value = state.apiKey;
-  if (state.usdaApiKey) usdaKeyInput.value = state.usdaApiKey;
   renderChatMessages();
 
   apiKeyInput.addEventListener('change', () => {
     state.apiKey = apiKeyInput.value.trim();
-    saveState();
-  });
-
-  usdaKeyInput.addEventListener('change', () => {
-    state.usdaApiKey = usdaKeyInput.value.trim();
     saveState();
   });
 
@@ -941,6 +921,14 @@ function processAssistantActions(reply) {
     renderDayTabs();
     renderPlanner();
   }
+}
+
+/* ─── NUTRITION MODAL BINDING ─── */
+function bindNutritionModal() {
+  document.getElementById('nutrition-close-btn').addEventListener('click', closeNutritionModal);
+  document.getElementById('nutrition-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'nutrition-overlay') closeNutritionModal();
+  });
 }
 
 /* ─── NUTRITION BADGE DELEGATION ─── */
