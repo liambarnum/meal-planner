@@ -3,7 +3,23 @@
     "allow": [
       "Bash(pkill -f \"python3 -m http.server 8000\")",
       "mcp__Claude_Preview__preview_start",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(ls /tmp/*.png /tmp/*.jpg /tmp/*.jpeg)",
+      "Bash(find /private/tmp -maxdepth 2 -name *.png -o -name *.jpg -o -name *.jpeg)",
+      "Bash(/tmp/gen_icon_v2.py:*)",
+      "Bash(python3 /tmp/gen_icon_v2.py)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "WebFetch(domain:fdc.nal.usda.gov)",
+      "WebSearch",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(node --check /Users/liam/meal-planner/nutrition.js)",
+      "Bash(npx -y esbuild --bundle nutrition.js --format=esm --outfile=/dev/null)",
+      "Bash(node -e \"require\\(''fs''\\).readFileSync\\(''/Users/liam/meal-planner/nutrition.js'',''utf8''\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY\" -X POST -H \"Content-Type: application/json\" -d '{\"\"query\"\":\"\"banana\"\",\"\"dataType\"\":[\"\"SR Legacy\"\"],\"\"pageSize\"\":1}')",
+      "Bash(curl -s -w \"\\\\n%{http_code}\" \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY\" -X POST -H \"Content-Type: application/json\" -d '{\"\"\"\"query\"\"\"\":\"\"\"\"banana\"\"\"\",\"\"\"\"dataType\"\"\"\":[\"\"\"\"SR Legacy\"\"\"\"],\"\"\"\"pageSize\"\"\"\":1}')"
     ]
   }
 }

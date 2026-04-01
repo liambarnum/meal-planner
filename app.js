@@ -21,6 +21,7 @@ let state = {
   assignments: {},           // { "2026-03-31-Breakfast": "meal-id", ... }
   checkedItems: {},
   apiKey: '',
+  usdaApiKey: '',
   masterMeals: [],
   chatHistory: [],
   dateRangeStart: null,      // ISO date string
@@ -75,15 +76,7 @@ function getDateRange() {
 function init() {
   loadState();
   if (!state.dateRangeStart) {
-    // Default: start on next Sunday (or today if Sunday)
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - dayOfWeek); // go back to Sunday
-    if (startDate < today) {
-      // If we're past Sunday, use this week's Sunday
-    }
-    state.dateRangeStart = dateToISO(startDate);
+    state.dateRangeStart = todayISO();
   }
   state.masterMeals = JSON.parse(JSON.stringify(MEALS));
   mergeSavedMeals();
@@ -94,7 +87,12 @@ function init() {
   bindChat();
   bindCalendar();
   bindClear();
+  bindNutritionModal();
+  bindNutritionDelegation();
   registerSW();
+
+  // Start background USDA data fetch for all ingredients
+  initNutritionData(state.masterMeals);
 }
 
 function loadState() {
@@ -105,6 +103,7 @@ function loadState() {
       state.assignments = parsed.assignments || {};
       state.checkedItems = parsed.checkedItems || {};
       state.apiKey = parsed.apiKey || '';
+      state.usdaApiKey = parsed.usdaApiKey || '';
       state.chatHistory = parsed.chatHistory || [];
       state.dateRangeStart = parsed.dateRangeStart || null;
       state.dateRangeLength = parsed.dateRangeLength || 7;
@@ -138,6 +137,7 @@ function saveState() {
     assignments: state.assignments,
     checkedItems: state.checkedItems,
     apiKey: state.apiKey,
+    usdaApiKey: state.usdaApiKey,
     chatHistory: state.chatHistory,
     customMeals: customMeals,
     dateRangeStart: state.dateRangeStart,
@@ -271,20 +271,72 @@ function renderAllMeals(container) {
   });
 }
 
+function renderIngredientsList(meal) {
+  return `
+    <div class="ingredients-toggle">
+      <button class="ingredients-toggle-btn">
+        <span class="ingredients-toggle-icon">&#9654;</span> Ingredients (${meal.ingredients.length})
+      </button>
+    </div>
+    <div class="ingredients-list ingredients-hidden">
+      ${(meal.ingredients || []).map(ing => `
+        <div class="ingredient-row">
+          <span class="ingredient-amount">${esc(ing.amount)}</span>
+          <span class="ingredient-info">
+            <span class="ingredient-name">${esc(ing.name)}</span>
+            ${ing.detail ? `<span class="ingredient-detail">${esc(ing.detail)}</span>` : ''}
+          </span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function bindIngredientsToggle(el) {
+  const btn = el.querySelector('.ingredients-toggle-btn');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const list = el.querySelector('.ingredients-list');
+    const icon = btn.querySelector('.ingredients-toggle-icon');
+    const isHidden = list.classList.contains('ingredients-hidden');
+    if (isHidden) {
+      list.classList.remove('ingredients-hidden');
+      icon.textContent = '\u25BC';
+    } else {
+      list.classList.add('ingredients-hidden');
+      icon.textContent = '\u25B6';
+    }
+  });
+}
+
 function createMealCard(meal) {
   const card = document.createElement('div');
   card.className = 'meal-card';
+  const hasWarning = hasUnacknowledgedWarnings(meal);
   card.innerHTML = `
     <div class="meal-card-name">${esc(meal.name)}</div>
     <div class="meal-card-desc">${esc(meal.description)}</div>
-    <div class="macro-badge">
-      <span>F: ${meal.macros.fats}g</span>
-      <span>C: ${meal.macros.carbs}g</span>
-      <span class="fiber">Fb: ${meal.macros.fiber}g</span>
-      <span>P: ${meal.macros.protein}g</span>
+    <div class="meal-card-actions">
+      <div class="macro-badge">
+        <span>F: ${meal.macros.fats}g</span>
+        <span>C: ${meal.macros.carbs}g</span>
+        <span class="fiber">Fb: ${meal.macros.fiber}g</span>
+        <span>P: ${meal.macros.protein}g</span>
+      </div>
+      <button class="nutrition-badge${hasWarning ? ' has-warning' : ''}" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">
+        NF
+        ${hasWarning ? '<span class="nutrition-warning-triangle" title="Some nutrition data needs attention">&#9888;</span>' : ''}
+      </button>
     </div>
+    ${renderIngredientsList(meal)}
   `;
-  card.addEventListener('click', () => openModal(meal.id));
+  bindIngredientsToggle(card);
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('.nutrition-badge')) return;
+    if (e.target.closest('.ingredients-toggle') || e.target.closest('.ingredients-list')) return;
+    openModal(meal.id);
+  });
   return card;
 }
 
@@ -336,20 +388,29 @@ function renderDayView(container, dateISO) {
     slotEl.dataset.slot = slot;
 
     if (meal) {
+      const hasWarning = hasUnacknowledgedWarnings(meal);
       slotEl.innerHTML = `
         <div class="slot-label">${slot}</div>
         <div class="slot-filled">
           <div class="slot-meal-name">${esc(meal.name)}</div>
           <div class="slot-meal-desc">${esc(meal.description)}</div>
-          <div class="macro-badge">
-            <span>F: ${meal.macros.fats}g</span>
-            <span>C: ${meal.macros.carbs}g</span>
-            <span class="fiber">Fb: ${meal.macros.fiber}g</span>
-            <span>P: ${meal.macros.protein}g</span>
+          <div class="meal-card-actions">
+            <div class="macro-badge">
+              <span>F: ${meal.macros.fats}g</span>
+              <span>C: ${meal.macros.carbs}g</span>
+              <span class="fiber">Fb: ${meal.macros.fiber}g</span>
+              <span>P: ${meal.macros.protein}g</span>
+            </div>
+            <button class="nutrition-badge${hasWarning ? ' has-warning' : ''}" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">
+              NF
+              ${hasWarning ? '<span class="nutrition-warning-triangle" title="Some nutrition data needs attention">&#9888;</span>' : ''}
+            </button>
           </div>
+          ${renderIngredientsList(meal)}
           <button class="slot-remove" title="Remove meal">&times;</button>
         </div>
       `;
+      bindIngredientsToggle(slotEl);
       slotEl.querySelector('.slot-remove').addEventListener('click', (e) => {
         e.stopPropagation();
         delete state.assignments[key];
@@ -468,7 +529,7 @@ function bindCalendar() {
 function applyPreset(days) {
   const startInput = document.getElementById('calendar-start');
   const endInput = document.getElementById('calendar-end');
-  const start = startInput.value || state.dateRangeStart;
+  const start = todayISO();
   startInput.value = start;
   endInput.value = addDays(start, days - 1);
 }
@@ -654,11 +715,19 @@ function bindChat() {
   const sendBtn = document.getElementById('chat-send');
   const apiKeyInput = document.getElementById('chat-api-key');
 
+  const usdaKeyInput = document.getElementById('usda-api-key');
+
   if (state.apiKey) apiKeyInput.value = state.apiKey;
+  if (state.usdaApiKey) usdaKeyInput.value = state.usdaApiKey;
   renderChatMessages();
 
   apiKeyInput.addEventListener('change', () => {
     state.apiKey = apiKeyInput.value.trim();
+    saveState();
+  });
+
+  usdaKeyInput.addEventListener('change', () => {
+    state.usdaApiKey = usdaKeyInput.value.trim();
     saveState();
   });
 
@@ -872,6 +941,20 @@ function processAssistantActions(reply) {
     renderDayTabs();
     renderPlanner();
   }
+}
+
+/* ─── NUTRITION BADGE DELEGATION ─── */
+function bindNutritionDelegation() {
+  // Use capture phase so this fires before card-level click handlers
+  document.addEventListener('click', (e) => {
+    const badge = e.target.closest('.nutrition-badge');
+    if (!badge) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const mealId = badge.dataset.mealId;
+    const meal = getMeal(mealId);
+    if (meal) openNutritionModal(meal);
+  }, true);
 }
 
 /* ─── HELPERS ─── */
