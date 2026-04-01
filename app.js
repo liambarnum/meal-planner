@@ -1,32 +1,90 @@
 /* ─── STATE ─── */
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SLOTS = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
 const SECTIONS = ['Produce', 'Dairy', 'Meat and Seafood', 'Pantry and Grains', 'Canned and Jarred', 'Refrigerated', 'Frozen'];
 const FIBER_TARGET = 30; // grams per day
+const DAY_ABBRS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const DAY_NOTES = {
-  Sun: "Prep day — batch-cook fiber-rich grains and roast vegetables for the week.",
-  Mon: "Start strong with high-fiber breakfast and prebiotic-rich foods.",
-  Tue: "Focus on fermented foods and diverse plant fibers today.",
-  Wed: "Midweek balance — lean proteins with plenty of colorful vegetables.",
-  Thu: "Increase omega-3 intake to support gut lining repair.",
-  Fri: "Polyphenol-rich foods today — berries, dark chocolate, green tea.",
-  Sat: "Flexible day — maintain fiber goals while enjoying variety."
+  0: "Prep day — batch-cook fiber-rich grains and roast vegetables for the week.",
+  1: "Start strong with high-fiber breakfast and prebiotic-rich foods.",
+  2: "Focus on fermented foods and diverse plant fibers today.",
+  3: "Midweek balance — lean proteins with plenty of colorful vegetables.",
+  4: "Increase omega-3 intake to support gut lining repair.",
+  5: "Polyphenol-rich foods today — berries, dark chocolate, green tea.",
+  6: "Flexible day — maintain fiber goals while enjoying variety."
 };
 
 let state = {
   currentPage: 'planner',
-  currentDay: 'All',
-  assignments: {},   // { "Mon-Breakfast": "meal-id", ... }
-  checkedItems: {},   // { "ingredient-key": true, ... }
+  currentDay: 'All',        // 'All' or ISO date string like '2026-03-31'
+  assignments: {},           // { "2026-03-31-Breakfast": "meal-id", ... }
+  checkedItems: {},
   apiKey: '',
-  masterMeals: [],    // working copy of MEALS
-  chatHistory: []
+  masterMeals: [],
+  chatHistory: [],
+  dateRangeStart: null,      // ISO date string
+  dateRangeLength: 7         // number of days
 };
+
+/* ─── DATE HELPERS ─── */
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function parseDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function dateToISO(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function addDays(iso, n) {
+  const d = parseDate(iso);
+  d.setDate(d.getDate() + n);
+  return dateToISO(d);
+}
+
+function formatDateShort(iso) {
+  const d = parseDate(iso);
+  return `${DAY_ABBRS[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function formatDateFull(iso) {
+  const d = parseDate(iso);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${DAY_FULL[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+function getDayNote(iso) {
+  return DAY_NOTES[parseDate(iso).getDay()];
+}
+
+function getDateRange() {
+  const dates = [];
+  for (let i = 0; i < state.dateRangeLength; i++) {
+    dates.push(addDays(state.dateRangeStart, i));
+  }
+  return dates;
+}
 
 /* ─── INIT ─── */
 function init() {
   loadState();
+  if (!state.dateRangeStart) {
+    // Default: start on next Sunday (or today if Sunday)
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - dayOfWeek); // go back to Sunday
+    if (startDate < today) {
+      // If we're past Sunday, use this week's Sunday
+    }
+    state.dateRangeStart = dateToISO(startDate);
+  }
   state.masterMeals = JSON.parse(JSON.stringify(MEALS));
   mergeSavedMeals();
   renderDayTabs();
@@ -34,6 +92,8 @@ function init() {
   bindNav();
   bindModal();
   bindChat();
+  bindCalendar();
+  bindClear();
   registerSW();
 }
 
@@ -46,6 +106,8 @@ function loadState() {
       state.checkedItems = parsed.checkedItems || {};
       state.apiKey = parsed.apiKey || '';
       state.chatHistory = parsed.chatHistory || [];
+      state.dateRangeStart = parsed.dateRangeStart || null;
+      state.dateRangeLength = parsed.dateRangeLength || 7;
       if (parsed.customMeals) state._savedCustomMeals = parsed.customMeals;
     }
   } catch (e) { /* start fresh */ }
@@ -66,7 +128,6 @@ function mergeSavedMeals() {
 }
 
 function saveState() {
-  // Save meals that differ from defaults or are new
   const defaultIds = new Set(MEALS.map(m => m.id));
   const customMeals = state.masterMeals.filter(m => {
     if (!defaultIds.has(m.id)) return true;
@@ -78,7 +139,9 @@ function saveState() {
     checkedItems: state.checkedItems,
     apiKey: state.apiKey,
     chatHistory: state.chatHistory,
-    customMeals: customMeals
+    customMeals: customMeals,
+    dateRangeStart: state.dateRangeStart,
+    dateRangeLength: state.dateRangeLength
   }));
 }
 
@@ -88,9 +151,47 @@ function getMeal(id) {
 
 /* ─── SERVICE WORKER ─── */
 function registerSW() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js').catch(() => {});
-  }
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.register('service-worker.js').then(reg => {
+    setInterval(() => reg.update(), 60000);
+    const onUpdate = () => showUpdateBanner();
+    if (reg.waiting) { onUpdate(); return; }
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          onUpdate();
+        }
+      });
+    });
+  }).catch(() => {});
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; window.location.reload(); }
+  });
+}
+
+function showUpdateBanner() {
+  if (document.getElementById('update-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    background: var(--gold); color: var(--bg); text-align: center;
+    padding: 10px 20px; font-family: var(--font-body); font-size: 0.9rem;
+    font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px;
+  `;
+  banner.innerHTML = `
+    <span>A new version is available!</span>
+    <button id="update-btn" style="background: var(--bg); color: var(--gold); border: none; border-radius: 6px;
+      padding: 6px 14px; font-family: var(--font-body); font-size: 0.82rem; font-weight: 600; cursor: pointer;">Update now</button>
+  `;
+  document.body.prepend(banner);
+  document.getElementById('update-btn').addEventListener('click', () => {
+    navigator.serviceWorker.getRegistration().then(r => { if (r && r.waiting) r.waiting.postMessage('skipWaiting'); });
+  });
 }
 
 /* ─── NAVIGATION ─── */
@@ -109,21 +210,39 @@ function bindNav() {
 
 /* ─── DAY TABS ─── */
 function renderDayTabs() {
-  const container = document.getElementById('day-tabs');
+  const container = document.getElementById('day-tabs-list');
   container.innerHTML = '';
-  const tabs = ['All', ...DAYS];
-  tabs.forEach(day => {
+  const dates = getDateRange();
+
+  // All tab
+  const allBtn = document.createElement('button');
+  allBtn.className = 'day-tab' + (state.currentDay === 'All' ? ' active' : '');
+  allBtn.textContent = 'All';
+  allBtn.addEventListener('click', () => {
+    state.currentDay = 'All';
+    renderDayTabs();
+    renderPlanner();
+  });
+  container.appendChild(allBtn);
+
+  // Date tabs
+  dates.forEach(iso => {
     const btn = document.createElement('button');
-    btn.className = 'day-tab' + (day === state.currentDay ? ' active' : '');
-    btn.textContent = day;
+    btn.className = 'day-tab' + (state.currentDay === iso ? ' active' : '');
+    btn.textContent = formatDateShort(iso);
+    if (iso === todayISO()) btn.classList.add('today');
     btn.addEventListener('click', () => {
-      state.currentDay = day;
-      document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
+      state.currentDay = iso;
+      renderDayTabs();
       renderPlanner();
     });
     container.appendChild(btn);
   });
+
+  // Update clear button visibility
+  const clearBtn = document.getElementById('clear-btn');
+  const hasAssignments = dates.some(iso => SLOTS.some(s => state.assignments[`${iso}-${s}`]));
+  clearBtn.style.display = hasAssignments ? '' : 'none';
 }
 
 /* ─── PLANNER RENDERING ─── */
@@ -169,13 +288,13 @@ function createMealCard(meal) {
   return card;
 }
 
-function renderDayView(container, day) {
+function renderDayView(container, dateISO) {
   container.innerHTML = '';
 
   // Day summary
   const totals = { fats: 0, carbs: 0, fiber: 0, protein: 0 };
   SLOTS.forEach(slot => {
-    const key = `${day}-${slot}`;
+    const key = `${dateISO}-${slot}`;
     const meal = getMeal(state.assignments[key]);
     if (meal) {
       totals.fats += meal.macros.fats;
@@ -190,7 +309,7 @@ function renderDayView(container, day) {
   const summary = document.createElement('div');
   summary.className = 'day-summary';
   summary.innerHTML = `
-    <div class="day-summary-title">${dayFullName(day)}</div>
+    <div class="day-summary-title">${formatDateFull(dateISO)}</div>
     <div class="day-macros">
       <span>Fats: ${totals.fats}g</span>
       <span>Carbs: ${totals.carbs}g</span>
@@ -203,13 +322,13 @@ function renderDayView(container, day) {
         <div class="fiber-bar-fill" style="width: ${fiberPct}%"></div>
       </div>
     </div>
-    <div class="day-note">${DAY_NOTES[day]}</div>
+    <div class="day-note">${getDayNote(dateISO)}</div>
   `;
   container.appendChild(summary);
 
   // Meal slots
   SLOTS.forEach(slot => {
-    const key = `${day}-${slot}`;
+    const key = `${dateISO}-${slot}`;
     const mealId = state.assignments[key];
     const meal = getMeal(mealId);
     const slotEl = document.createElement('div');
@@ -235,6 +354,7 @@ function renderDayView(container, day) {
         e.stopPropagation();
         delete state.assignments[key];
         saveState();
+        renderDayTabs();
         renderPlanner();
       });
     } else {
@@ -243,7 +363,7 @@ function renderDayView(container, day) {
         <div class="slot-empty">+ Tap to assign a meal</div>
       `;
       slotEl.querySelector('.slot-empty').addEventListener('click', () => {
-        openModal(null, day, slot);
+        openModal(null, dateISO, slot);
       });
     }
 
@@ -251,7 +371,7 @@ function renderDayView(container, day) {
   });
 }
 
-/* ─── MODAL ─── */
+/* ─── ASSIGNMENT MODAL ─── */
 let modalMealId = null;
 
 function bindModal() {
@@ -260,13 +380,12 @@ function bindModal() {
     if (e.target === e.currentTarget) closeModal();
   });
   document.getElementById('modal-confirm').addEventListener('click', () => {
-    const day = document.getElementById('modal-day').value;
+    const dateISO = document.getElementById('modal-day').value;
     const slot = document.getElementById('modal-slot').value;
-    if (modalMealId) {
-      state.assignments[`${day}-${slot}`] = modalMealId;
+    if (modalMealId && dateISO) {
+      state.assignments[`${dateISO}-${slot}`] = modalMealId;
       saveState();
-      // Switch to the assigned day
-      state.currentDay = day;
+      state.currentDay = dateISO;
       renderDayTabs();
       renderPlanner();
     }
@@ -274,8 +393,20 @@ function bindModal() {
   });
 }
 
-function openModal(mealId, preDay, preSlot) {
+function populateModalDays() {
+  const select = document.getElementById('modal-day');
+  select.innerHTML = '';
+  getDateRange().forEach(iso => {
+    const opt = document.createElement('option');
+    opt.value = iso;
+    opt.textContent = formatDateFull(iso);
+    select.appendChild(opt);
+  });
+}
+
+function openModal(mealId, preDate, preSlot) {
   modalMealId = mealId;
+  populateModalDays();
 
   if (mealId) {
     const meal = getMeal(mealId);
@@ -284,10 +415,9 @@ function openModal(mealId, preDay, preSlot) {
     document.getElementById('modal-title').textContent = 'Select a meal first from the All tab';
   }
 
-  if (preDay) document.getElementById('modal-day').value = preDay;
+  if (preDate) document.getElementById('modal-day').value = preDate;
   if (preSlot) document.getElementById('modal-slot').value = preSlot;
 
-  // If opened from an empty slot, show meal selection instead
   if (!mealId) {
     state.currentDay = 'All';
     renderDayTabs();
@@ -303,6 +433,125 @@ function closeModal() {
   modalMealId = null;
 }
 
+/* ─── CALENDAR PICKER ─── */
+function bindCalendar() {
+  document.getElementById('calendar-btn').addEventListener('click', openCalendar);
+  document.getElementById('calendar-cancel').addEventListener('click', closeCalendar);
+  document.getElementById('calendar-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeCalendar();
+  });
+  document.getElementById('calendar-apply').addEventListener('click', () => {
+    const startVal = document.getElementById('calendar-start').value;
+    const endVal = document.getElementById('calendar-end').value;
+    if (startVal && endVal) {
+      const start = parseDate(startVal);
+      const end = parseDate(endVal);
+      if (end >= start) {
+        const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        state.dateRangeStart = startVal;
+        state.dateRangeLength = Math.max(1, Math.min(diffDays, 90)); // cap at 90 days
+        state.currentDay = 'All';
+        saveState();
+        renderDayTabs();
+        renderPlanner();
+        closeCalendar();
+      }
+    }
+  });
+
+  // Quick presets
+  document.getElementById('cal-preset-week').addEventListener('click', () => applyPreset(7));
+  document.getElementById('cal-preset-2week').addEventListener('click', () => applyPreset(14));
+  document.getElementById('cal-preset-month').addEventListener('click', () => applyPreset(30));
+}
+
+function applyPreset(days) {
+  const startInput = document.getElementById('calendar-start');
+  const endInput = document.getElementById('calendar-end');
+  const start = startInput.value || state.dateRangeStart;
+  startInput.value = start;
+  endInput.value = addDays(start, days - 1);
+}
+
+function openCalendar() {
+  const startInput = document.getElementById('calendar-start');
+  const endInput = document.getElementById('calendar-end');
+  startInput.value = state.dateRangeStart;
+  endInput.value = addDays(state.dateRangeStart, state.dateRangeLength - 1);
+  document.getElementById('calendar-overlay').classList.add('open');
+}
+
+function closeCalendar() {
+  document.getElementById('calendar-overlay').classList.remove('open');
+}
+
+/* ─── CLEAR MEALS ─── */
+function bindClear() {
+  document.getElementById('clear-btn').addEventListener('click', openClearModal);
+  document.getElementById('clear-cancel').addEventListener('click', closeClearModal);
+  document.getElementById('clear-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeClearModal();
+  });
+  document.getElementById('clear-confirm').addEventListener('click', executeClear);
+}
+
+function openClearModal() {
+  const container = document.getElementById('clear-date-list');
+  container.innerHTML = '';
+  const dates = getDateRange();
+
+  // "Select All" checkbox
+  const selectAllRow = document.createElement('label');
+  selectAllRow.className = 'clear-date-row select-all';
+  selectAllRow.innerHTML = `
+    <input type="checkbox" id="clear-select-all" checked>
+    <span>Select All</span>
+  `;
+  container.appendChild(selectAllRow);
+
+  dates.forEach(iso => {
+    const hasAssignment = SLOTS.some(s => state.assignments[`${iso}-${s}`]);
+    const row = document.createElement('label');
+    row.className = 'clear-date-row';
+    row.innerHTML = `
+      <input type="checkbox" value="${iso}" class="clear-date-cb" ${hasAssignment ? 'checked' : ''} ${!hasAssignment ? 'disabled' : ''}>
+      <span class="${!hasAssignment ? 'muted' : ''}">${formatDateShort(iso)} — ${hasAssignment ? countMealsForDate(iso) + ' meal(s)' : 'empty'}</span>
+    `;
+    container.appendChild(row);
+  });
+
+  // Wire up "Select All"
+  document.getElementById('clear-select-all').addEventListener('change', (e) => {
+    container.querySelectorAll('.clear-date-cb:not(:disabled)').forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+  });
+
+  document.getElementById('clear-overlay').classList.add('open');
+}
+
+function countMealsForDate(iso) {
+  return SLOTS.filter(s => state.assignments[`${iso}-${s}`]).length;
+}
+
+function closeClearModal() {
+  document.getElementById('clear-overlay').classList.remove('open');
+}
+
+function executeClear() {
+  const checkboxes = document.querySelectorAll('.clear-date-cb:checked');
+  checkboxes.forEach(cb => {
+    const iso = cb.value;
+    SLOTS.forEach(slot => {
+      delete state.assignments[`${iso}-${slot}`];
+    });
+  });
+  saveState();
+  closeClearModal();
+  renderDayTabs();
+  renderPlanner();
+}
+
 /* ─── GROCERY LIST ─── */
 let grocerySection = 'Produce';
 
@@ -310,7 +559,6 @@ function renderGrocery() {
   const content = document.getElementById('grocery-content');
   content.innerHTML = '';
 
-  // Header
   const header = document.createElement('div');
   header.className = 'grocery-header';
   header.innerHTML = `
@@ -325,19 +573,24 @@ function renderGrocery() {
     renderGrocery();
   });
 
-  // Build ingredient map from assigned meals only
+  // Build ingredient map from assigned meals in current date range
   const ingredientMap = {};
-  for (const [key, mealId] of Object.entries(state.assignments)) {
-    const meal = getMeal(mealId);
-    if (!meal) continue;
-    for (const ing of meal.ingredients) {
-      const section = ing.section || 'Pantry and Grains';
-      if (!ingredientMap[section]) ingredientMap[section] = {};
-      const ingKey = ing.name.toLowerCase();
-      if (!ingredientMap[section][ingKey]) {
-        ingredientMap[section][ingKey] = { name: ing.name, amounts: [] };
+  const dates = getDateRange();
+  for (const iso of dates) {
+    for (const slot of SLOTS) {
+      const mealId = state.assignments[`${iso}-${slot}`];
+      if (!mealId) continue;
+      const meal = getMeal(mealId);
+      if (!meal) continue;
+      for (const ing of meal.ingredients) {
+        const section = ing.section || 'Pantry and Grains';
+        if (!ingredientMap[section]) ingredientMap[section] = {};
+        const ingKey = ing.name.toLowerCase();
+        if (!ingredientMap[section][ingKey]) {
+          ingredientMap[section][ingKey] = { name: ing.name, amounts: [] };
+        }
+        ingredientMap[section][ingKey].amounts.push(ing.amount);
       }
-      ingredientMap[section][ingKey].amounts.push(ing.amount);
     }
   }
 
@@ -363,11 +616,9 @@ function renderGrocery() {
   if (!items || Object.keys(items).length === 0) {
     const empty = document.createElement('div');
     empty.className = 'grocery-empty';
-    empty.textContent = grocerySection === Object.keys(ingredientMap).find(k => ingredientMap[k] && Object.keys(ingredientMap[k]).length > 0)
-      ? 'No items in this section.'
-      : Object.keys(state.assignments).length === 0
-        ? 'Assign meals to day slots to generate your grocery list.'
-        : 'No items in this section.';
+    empty.textContent = Object.values(state.assignments).length === 0
+      ? 'Assign meals to day slots to generate your grocery list.'
+      : 'No items in this section.';
     content.appendChild(empty);
     return;
   }
@@ -404,8 +655,6 @@ function bindChat() {
   const apiKeyInput = document.getElementById('chat-api-key');
 
   if (state.apiKey) apiKeyInput.value = state.apiKey;
-
-  // Restore chat history
   renderChatMessages();
 
   apiKeyInput.addEventListener('change', () => {
@@ -420,10 +669,7 @@ function bindChat() {
 
   sendBtn.addEventListener('click', () => sendChat());
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendChat();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
   });
 }
 
@@ -441,7 +687,6 @@ function renderChatMessages() {
 
 function addChatMessage(role, content) {
   state.chatHistory.push({ role, content });
-  // Keep last 50 messages
   if (state.chatHistory.length > 50) state.chatHistory = state.chatHistory.slice(-50);
   saveState();
   renderChatMessages();
@@ -491,10 +736,8 @@ async function sendChat() {
 
     const data = await response.json();
     const reply = data.content[0]?.text || 'No response.';
-
     addChatMessage('assistant', reply);
     processAssistantActions(reply);
-
   } catch (err) {
     addChatMessage('error', err.message);
   } finally {
@@ -503,13 +746,13 @@ async function sendChat() {
 }
 
 function buildSystemPrompt() {
-  // Build current assignment state
+  const dates = getDateRange();
   const assignmentLines = [];
-  DAYS.forEach(day => {
+  dates.forEach(iso => {
     SLOTS.forEach(slot => {
-      const key = `${day}-${slot}`;
+      const key = `${iso}-${slot}`;
       const meal = getMeal(state.assignments[key]);
-      assignmentLines.push(`${day} ${slot}: ${meal ? meal.name : '(empty)'}`);
+      assignmentLines.push(`${formatDateShort(iso)} ${slot}: ${meal ? meal.name : '(empty)'}`);
     });
   });
 
@@ -523,6 +766,8 @@ DIETARY GOALS:
 - Target ${FIBER_TARGET}g of fiber per day
 - Encourage fermented foods, prebiotics, and polyphenol-rich ingredients
 
+DATE RANGE: ${formatDateShort(state.dateRangeStart)} to ${formatDateShort(addDays(state.dateRangeStart, state.dateRangeLength - 1))}
+
 CURRENT MEAL ASSIGNMENTS:
 ${assignmentLines.join('\n')}
 
@@ -530,20 +775,20 @@ AVAILABLE MEALS IN MASTER LIST:
 ${allMealNames}
 
 CURRENT CONTEXT:
-- Active day tab: ${state.currentDay}
+- Active day tab: ${state.currentDay === 'All' ? 'All' : formatDateShort(state.currentDay)}
 - Page: ${state.currentPage}
 
 CAPABILITIES - You can instruct data changes using these exact formats on their own line:
 [ADD_MEAL] id|name|category|description|fats|carbs|fiber|protein|ingredients_json
 [EDIT_MEAL] id|field|new_value
 [REMOVE_MEAL] id
-[ASSIGN] day-slot|meal_id
-[UNASSIGN] day-slot
+[ASSIGN] date-slot|meal_id  (date in YYYY-MM-DD format, e.g. 2026-03-31-Breakfast)
+[UNASSIGN] date-slot
 
 For ingredients_json use: [{"name":"X","amount":"Y","section":"Z"}]
 Valid categories: Breakfast, Lunch, Snack, Dinner, Dessert
-Valid days: Sun, Mon, Tue, Wed, Thu, Fri, Sat
 Valid slots: Breakfast, Lunch, Snack, Dinner, Dessert
+Dates must be ISO format (YYYY-MM-DD) within the current range.
 
 When making changes, include the command AND a natural language explanation. Keep responses concise and helpful.`;
 }
@@ -555,7 +800,6 @@ function processAssistantActions(reply) {
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // [ADD_MEAL] id|name|category|description|fats|carbs|fiber|protein|ingredients_json
     if (trimmed.startsWith('[ADD_MEAL]')) {
       const parts = trimmed.replace('[ADD_MEAL]', '').trim().split('|');
       if (parts.length >= 8) {
@@ -572,17 +816,11 @@ function processAssistantActions(reply) {
           },
           ingredients: []
         };
-        try {
-          if (parts[8]) newMeal.ingredients = JSON.parse(parts[8].trim());
-        } catch (e) { /* no ingredients */ }
-        if (!getMeal(newMeal.id)) {
-          state.masterMeals.push(newMeal);
-          changed = true;
-        }
+        try { if (parts[8]) newMeal.ingredients = JSON.parse(parts[8].trim()); } catch (e) {}
+        if (!getMeal(newMeal.id)) { state.masterMeals.push(newMeal); changed = true; }
       }
     }
 
-    // [EDIT_MEAL] id|field|new_value
     if (trimmed.startsWith('[EDIT_MEAL]')) {
       const parts = trimmed.replace('[EDIT_MEAL]', '').trim().split('|');
       if (parts.length >= 3) {
@@ -596,21 +834,17 @@ function processAssistantActions(reply) {
           else if (field === 'fats') meal.macros.fats = parseInt(value) || 0;
           else if (field === 'carbs') meal.macros.carbs = parseInt(value) || 0;
           else if (field === 'protein') meal.macros.protein = parseInt(value) || 0;
-          else if (field === 'ingredients') {
-            try { meal.ingredients = JSON.parse(value); } catch (e) {}
-          }
+          else if (field === 'ingredients') { try { meal.ingredients = JSON.parse(value); } catch (e) {} }
           changed = true;
         }
       }
     }
 
-    // [REMOVE_MEAL] id
     if (trimmed.startsWith('[REMOVE_MEAL]')) {
       const id = trimmed.replace('[REMOVE_MEAL]', '').trim();
       const idx = state.masterMeals.findIndex(m => m.id === id);
       if (idx >= 0) {
         state.masterMeals.splice(idx, 1);
-        // Remove any assignments of this meal
         for (const key in state.assignments) {
           if (state.assignments[key] === id) delete state.assignments[key];
         }
@@ -618,31 +852,24 @@ function processAssistantActions(reply) {
       }
     }
 
-    // [ASSIGN] day-slot|meal_id
     if (trimmed.startsWith('[ASSIGN]')) {
       const parts = trimmed.replace('[ASSIGN]', '').trim().split('|');
       if (parts.length >= 2) {
         const key = parts[0].trim();
         const mealId = parts[1].trim();
-        if (getMeal(mealId)) {
-          state.assignments[key] = mealId;
-          changed = true;
-        }
+        if (getMeal(mealId)) { state.assignments[key] = mealId; changed = true; }
       }
     }
 
-    // [UNASSIGN] day-slot
     if (trimmed.startsWith('[UNASSIGN]')) {
       const key = trimmed.replace('[UNASSIGN]', '').trim();
-      if (state.assignments[key]) {
-        delete state.assignments[key];
-        changed = true;
-      }
+      if (state.assignments[key]) { delete state.assignments[key]; changed = true; }
     }
   }
 
   if (changed) {
     saveState();
+    renderDayTabs();
     renderPlanner();
   }
 }
@@ -652,11 +879,6 @@ function esc(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
-}
-
-function dayFullName(abbr) {
-  const map = { Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
-  return map[abbr] || abbr;
 }
 
 /* ─── START ─── */

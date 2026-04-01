@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meal-planner-v1';
+const CACHE_NAME = 'meal-planner-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const ASSETS = [
   './icons/icon-512.png'
 ];
 
-// Install — cache all local assets
+// Install — cache all local assets, activate immediately
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
@@ -18,17 +18,16 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Activate — clean up old caches
+// Activate — clean up old caches, take control of all clients
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch — cache-first for local assets, network-first for external
+// Fetch — stale-while-revalidate for local assets
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -50,8 +49,23 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Local assets — cache first
+  // Local assets — stale-while-revalidate
+  // Serve cached version immediately, fetch update in background
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
+    caches.open(CACHE_NAME).then(cache =>
+      cache.match(event.request).then(cached => {
+        const fetchPromise = fetch(event.request).then(response => {
+          if (response.ok) cache.put(event.request, response.clone());
+          return response;
+        }).catch(() => cached);
+
+        return cached || fetchPromise;
+      })
+    )
   );
+});
+
+// Listen for messages from the app
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') self.skipWaiting();
 });

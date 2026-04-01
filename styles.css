@@ -79,16 +79,50 @@ body {
 /* ─── DAY TABS ─── */
 .day-tabs {
   display: flex;
-  gap: 4px;
+  align-items: center;
   padding: 12px 20px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   position: sticky;
   top: 57px;
   z-index: 99;
+  gap: 8px;
 }
+
+.day-tabs-left {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-width: 0;
+}
+
+.day-tabs-right {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.clear-btn:hover { border-color: #c85a5a; color: #c85a5a; }
 
 .day-tab {
   background: transparent;
@@ -107,6 +141,7 @@ body {
 
 .day-tab:hover { color: var(--text); border-color: var(--border); }
 .day-tab.active { color: var(--gold); border-color: var(--gold); background: rgba(200, 169, 110, 0.1); }
+.day-tab.today:not(.active) { border-color: var(--green); color: var(--green); }
 
 /* ─── MAIN CONTENT ─── */
 .main-content {
@@ -391,6 +426,93 @@ body {
 }
 
 .btn-secondary:hover { color: var(--text); border-color: var(--text-muted); }
+
+.btn-danger {
+  background: #c85a5a;
+  color: #fff;
+}
+
+.btn-danger:hover { background: #d46a6a; }
+
+/* ─── DATE INPUT ─── */
+.date-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+}
+
+.date-input:focus { outline: none; border-color: var(--gold); }
+.date-input::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+
+/* ─── CALENDAR PRESETS ─── */
+.calendar-presets {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.btn-preset {
+  flex: 1;
+  padding: 8px 6px;
+  background: rgba(200, 169, 110, 0.1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-preset:hover { color: var(--gold); border-color: var(--gold); }
+
+/* ─── CLEAR MODAL ─── */
+.clear-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.clear-date-list {
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.clear-date-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(51,51,48,0.3);
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.clear-date-row.select-all {
+  font-weight: 600;
+  color: var(--gold);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+}
+
+.clear-date-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.clear-date-row .muted { color: var(--text-muted); }
 
 /* ─── GROCERY LIST ─── */
 .grocery-header {

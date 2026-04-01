@@ -25,7 +25,27 @@
 
   <!-- Meal Planner Page -->
   <div id="page-planner">
-    <div class="day-tabs" id="day-tabs"></div>
+    <div class="day-tabs" id="day-tabs">
+      <div class="day-tabs-left" id="day-tabs-list"></div>
+      <div class="day-tabs-right">
+        <button class="icon-btn" id="calendar-btn" title="Date range">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </button>
+        <button class="icon-btn clear-btn" id="clear-btn" title="Clear meals" style="display:none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+          </svg>
+        </button>
+      </div>
+    </div>
     <div class="main-content" id="planner-content"></div>
   </div>
 
@@ -39,15 +59,7 @@
     <div class="modal">
       <div class="modal-title" id="modal-title">Assign Meal</div>
       <label for="modal-day">Day</label>
-      <select id="modal-day">
-        <option value="Sun">Sunday</option>
-        <option value="Mon">Monday</option>
-        <option value="Tue">Tuesday</option>
-        <option value="Wed">Wednesday</option>
-        <option value="Thu">Thursday</option>
-        <option value="Fri">Friday</option>
-        <option value="Sat">Saturday</option>
-      </select>
+      <select id="modal-day"></select>
       <label for="modal-slot">Meal Slot</label>
       <select id="modal-slot">
         <option value="Breakfast">Breakfast</option>
@@ -59,6 +71,39 @@
       <div class="modal-actions">
         <button class="btn btn-primary" id="modal-confirm">Assign</button>
         <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Modal -->
+  <div class="modal-overlay" id="calendar-overlay">
+    <div class="modal">
+      <div class="modal-title">Date Range</div>
+      <div class="calendar-presets">
+        <button class="btn-preset" id="cal-preset-week">1 Week</button>
+        <button class="btn-preset" id="cal-preset-2week">2 Weeks</button>
+        <button class="btn-preset" id="cal-preset-month">30 Days</button>
+      </div>
+      <label for="calendar-start">Start Date</label>
+      <input type="date" id="calendar-start" class="date-input">
+      <label for="calendar-end">End Date</label>
+      <input type="date" id="calendar-end" class="date-input">
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="calendar-apply">Apply</button>
+        <button class="btn btn-secondary" id="calendar-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clear Modal -->
+  <div class="modal-overlay" id="clear-overlay">
+    <div class="modal">
+      <div class="modal-title">Clear Meal Assignments</div>
+      <p class="clear-desc">Select which days to clear:</p>
+      <div class="clear-date-list" id="clear-date-list"></div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="clear-confirm">Clear Selected</button>
+        <button class="btn btn-secondary" id="clear-cancel">Cancel</button>
       </div>
     </div>
   </div>
