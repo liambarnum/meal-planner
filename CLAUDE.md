@@ -1,5 +1,7 @@
 # Meal Planner PWA
 
+> **Keep `CHANGELOG.md` up to date when committing changes.**
+
 ## File Structure
 
 ```
