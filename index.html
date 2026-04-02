@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
@@ -20,6 +20,7 @@
     <nav class="nav-tabs">
       <button class="nav-tab active" data-page="planner">Meal Planner</button>
       <button class="nav-tab" data-page="grocery">Grocery List</button>
+      <button class="nav-tab" data-page="preferences">Preferences</button>
     </nav>
   </header>
 
@@ -52,6 +53,76 @@
   <!-- Grocery List Page -->
   <div id="page-grocery" style="display:none">
     <div class="main-content" id="grocery-content"></div>
+  </div>
+
+  <!-- Dietary Preferences Page -->
+  <div id="page-preferences" style="display:none">
+    <div class="main-content prefs-page">
+
+      <h2 class="prefs-page-title">Dietary Preferences &amp; Restrictions</h2>
+
+      <!-- Allergens -->
+      <section class="prefs-section">
+        <h3 class="prefs-section-title">Allergens</h3>
+        <p class="prefs-section-desc">Select any food allergies or intolerances.</p>
+        <div class="allergen-checklist" id="allergen-checklist"></div>
+        <div class="allergen-tags" id="allergen-tags"></div>
+        <div class="allergen-other-wrapper">
+          <label class="allergen-other-label" for="allergen-other">Other</label>
+          <input type="text" id="allergen-other" class="allergen-other-input" placeholder="Type an allergen and press Enter...">
+        </div>
+      </section>
+
+      <!-- Diet Goals -->
+      <section class="prefs-section">
+        <h3 class="prefs-section-title">Diet Goals &amp; Guidelines</h3>
+        <p class="prefs-section-desc">Describe your dietary goals — weight loss, gut health, race training, muscle gain, etc.</p>
+        <textarea id="diet-goals" class="diet-goals-input" rows="4" placeholder="e.g. I'm training for a half marathon and focusing on gut health. I want high-fiber, anti-inflammatory meals with enough carbs for long runs..."></textarea>
+        <p class="prefs-ai-hint">💡 Tip: Use the <strong>AI Assistant</strong> (bottom-right) with your API key to fine-tune these guidelines. The assistant reads your preferences to give personalized meal suggestions.</p>
+      </section>
+
+      <!-- Ingredient Tier List -->
+      <section class="prefs-section">
+        <h3 class="prefs-section-title">Ingredient Preferences</h3>
+        <p class="prefs-section-desc">Drag ingredients into tiers to tell us how much you like them.</p>
+        <div class="tier-list" id="tier-list">
+          <div class="tier-row" data-tier="S">
+            <div class="tier-label tier-s">S</div>
+            <div class="tier-drop" data-tier="S"></div>
+          </div>
+          <div class="tier-row" data-tier="A">
+            <div class="tier-label tier-a">A</div>
+            <div class="tier-drop" data-tier="A"></div>
+          </div>
+          <div class="tier-row" data-tier="B">
+            <div class="tier-label tier-b">B</div>
+            <div class="tier-drop" data-tier="B"></div>
+          </div>
+          <div class="tier-row" data-tier="C">
+            <div class="tier-label tier-c">C</div>
+            <div class="tier-drop" data-tier="C"></div>
+          </div>
+          <div class="tier-row" data-tier="D">
+            <div class="tier-label tier-d">D</div>
+            <div class="tier-drop" data-tier="D"></div>
+          </div>
+          <div class="tier-row" data-tier="try">
+            <div class="tier-label tier-try">I'll try<br>it</div>
+            <div class="tier-drop" data-tier="try"></div>
+          </div>
+        </div>
+        <div class="tier-trash" id="tier-trash">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          <span>Drop here to remove</span>
+        </div>
+        <div class="tier-bank-label">Unsorted Ingredients</div>
+        <div class="tier-bank" id="tier-bank"></div>
+      </section>
+
+    </div>
   </div>
 
   <!-- Assignment Modal -->
@@ -138,8 +209,8 @@
     </div>
   </div>
 
-  <script src="meals.js?v=5"></script>
-  <script src="nutrition.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+  <script src="meals.js?v=7"></script>
+  <script src="nutrition.js?v=7"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

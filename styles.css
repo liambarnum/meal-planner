@@ -152,6 +152,8 @@ body {
 }
 
 /* ─── CATEGORY HEADER ─── */
+.category-section:first-child .category-header { margin-top: 8px; }
+
 .category-header {
   font-family: var(--font-heading);
   font-size: 1.2rem;
@@ -160,9 +162,35 @@ body {
   margin: 24px 0 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition);
 }
 
-.category-header:first-child { margin-top: 8px; }
+.category-header:hover {
+  color: var(--text);
+}
+
+.category-toggle-icon {
+  display: inline-block;
+  font-size: 0.75rem;
+  margin-right: 4px;
+  transition: transform var(--transition);
+}
+
+.category-count {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.category-body {
+  transition: none;
+}
+
+.category-collapsed {
+  display: none;
+}
 
 /* ─── MEAL CARDS (All tab) ─── */
 .meal-card {
@@ -217,12 +245,22 @@ body {
   margin-bottom: 20px;
 }
 
+.day-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .day-summary-title {
   font-family: var(--font-heading);
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--gold);
-  margin-bottom: 8px;
+}
+
+.day-nf-badge {
+  flex-shrink: 0;
 }
 
 .day-macros {
@@ -236,31 +274,40 @@ body {
 
 .day-macros span { white-space: nowrap; }
 
-.fiber-bar-container {
+.macro-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin-bottom: 10px;
 }
 
-.fiber-bar-label {
-  font-size: 0.8rem;
-  color: var(--green);
-  margin-bottom: 4px;
+.macro-bar-container {}
+
+.macro-bar-label {
+  font-size: 0.75rem;
+  margin-bottom: 3px;
   font-weight: 500;
+  color: var(--text-muted);
 }
 
-.fiber-bar-track {
+.macro-bar-track {
   width: 100%;
-  height: 8px;
+  height: 7px;
   background: rgba(0,0,0,0.3);
   border-radius: 4px;
   overflow: hidden;
 }
 
-.fiber-bar-fill {
+.macro-bar-fill {
   height: 100%;
-  background: var(--green);
   border-radius: 4px;
   transition: width 0.4s ease;
 }
+
+.macro-bar-fats    { background: #f0a500; }
+.macro-bar-carbs   { background: #4da6ff; }
+.macro-bar-fiber   { background: var(--green); }
+.macro-bar-protein { background: #e06c75; }
 
 .day-note {
   font-size: 0.82rem;
@@ -1052,4 +1099,309 @@ body {
   .chat-panel { right: 10px; left: 10px; width: auto; bottom: 86px; }
   .chat-fab { bottom: 18px; right: 18px; }
   .day-macros { gap: 10px; }
+}
+
+/* ─── PREFERENCES PAGE ─── */
+.prefs-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.prefs-page-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: var(--gold);
+  margin-bottom: 24px;
+}
+
+.prefs-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.prefs-section-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.prefs-section-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* Allergens */
+.allergen-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.allergen-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  user-select: none;
+}
+
+.allergen-item:hover {
+  border-color: var(--gold);
+}
+
+.allergen-item input[type="checkbox"] {
+  accent-color: var(--gold);
+}
+
+.allergen-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.allergen-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(200, 169, 110, 0.15);
+  border: 1px solid var(--gold);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+
+.allergen-tag-x {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity var(--transition);
+}
+
+.allergen-tag-x:hover { opacity: 1; }
+
+.allergen-other-wrapper {
+  margin-top: 14px;
+}
+
+.allergen-other-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.allergen-other-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.allergen-other-input:focus {
+  border-color: var(--gold);
+}
+
+/* Diet Goals */
+.diet-goals-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--transition);
+  line-height: 1.5;
+}
+
+.diet-goals-input:focus {
+  border-color: var(--gold);
+}
+
+.prefs-ai-hint {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 10px 14px;
+  background: rgba(200, 169, 110, 0.08);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--gold);
+}
+
+.prefs-ai-hint strong {
+  color: var(--gold);
+}
+
+/* Tier List */
+.tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.tier-row {
+  display: flex;
+  min-height: 64px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.tier-label {
+  width: 76px;
+  min-width: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #1a1a18;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.tier-s   { background: #e07070; }
+.tier-a   { background: #e0a860; }
+.tier-b   { background: #e0d070; }
+.tier-c   { background: #e8e870; }
+.tier-d   { background: #c8e870; }
+.tier-try { background: #90d890; font-size: 0.85rem; }
+
+.tier-drop {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  gap: 6px;
+  padding: 8px;
+  min-height: 64px;
+  transition: background var(--transition);
+}
+
+.tier-drop.drag-over,
+.tier-bank.drag-over {
+  background: rgba(200, 169, 110, 0.12);
+}
+
+.tier-trash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 2px dashed rgba(200, 90, 90, 0.35);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.tier-trash.drag-over {
+  background: rgba(200, 90, 90, 0.15);
+  border-color: #c85a5a;
+  color: #e07070;
+}
+
+.tier-bank-label {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.tier-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  min-height: 60px;
+  transition: background var(--transition);
+}
+
+.tier-chip {
+  padding: 7px 15px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: grab;
+  user-select: none;
+  white-space: nowrap;
+  transition: border-color var(--transition), transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tier-chip:hover {
+  border-color: var(--gold);
+}
+
+.tier-chip.dragging {
+  opacity: 0.4;
+  transform: scale(0.95);
+}
+
+.tier-chip.picked {
+  opacity: 0.45;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(200, 169, 110, 0.3);
+}
+
+.picked-ghost {
+  opacity: 0.9 !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  border-color: var(--gold) !important;
+}
+
+.tier-chip-ghost {
+  opacity: 0.85 !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  border-color: var(--gold) !important;
+}
+
+@media (max-width: 500px) {
+  .tier-label { width: 50px; min-width: 50px; font-size: 0.9rem; }
+  .tier-chip { font-size: 0.75rem; padding: 5px 10px; }
 }

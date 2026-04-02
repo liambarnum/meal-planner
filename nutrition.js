@@ -475,11 +475,99 @@ function renderNutritionLabel(meal) {
   `;
 }
 
+function computeDayNutrition(meals) {
+  const dayTotals = {};
+  NUTRITION_FIELDS.forEach(f => { dayTotals[f] = 0; });
+  let totalGrams = 0;
+  let hasAny = false;
+
+  for (const meal of meals) {
+    const { totals, servingSizeGrams, hasAnyNutritionData } = computeMealNutrition(meal);
+    if (hasAnyNutritionData) hasAny = true;
+    totalGrams += servingSizeGrams;
+    for (const f of NUTRITION_FIELDS) dayTotals[f] += totals[f];
+  }
+
+  for (const f of NUTRITION_FIELDS) dayTotals[f] = Math.round(dayTotals[f] * 10) / 10;
+  return { totals: dayTotals, servingSizeGrams: Math.round(totalGrams), hasAnyNutritionData: hasAny };
+}
+
+function renderDayNutritionLabel(meals, dayLabel) {
+  const { totals, servingSizeGrams, hasAnyNutritionData } = computeDayNutrition(meals);
+
+  function row(label, field, indent, bold) {
+    const val = totals[field];
+    const display = formatNutrientValue(field, val);
+    const dv = calcDV(field, val);
+    const dvStr = dv !== null ? `<span class="nf-dv">${dv}%</span>` : '';
+    const cls = [indent ? 'nf-indent' : '', bold ? 'nf-bold' : ''].filter(Boolean).join(' ');
+    return `<div class="nf-row ${cls}"><span>${label} ${display}</span>${dvStr}</div>`;
+  }
+
+  if (!hasAnyNutritionData) {
+    return `<div class="nf-no-data"><div class="nf-no-data-title">No Nutrition Data Available</div><div class="nf-no-data-text">No meals assigned for this day.</div></div>`;
+  }
+
+  return `
+    <div class="nutrition-label">
+      <div class="nf-title">Nutrition Facts</div>
+      <div class="nf-thick-bar"></div>
+      <div class="nf-serving">
+        <div class="nf-serving-size"><span class="nf-bold">Daily total</span> ${meals.length} meal${meals.length !== 1 ? 's' : ''}${servingSizeGrams ? ' (' + servingSizeGrams + 'g)' : ''}</div>
+      </div>
+      <div class="nf-thick-bar"></div>
+      <div class="nf-calories-row">
+        <div class="nf-calories-label">Calories</div>
+        <div class="nf-calories-value">${totals.calories !== null ? Math.round(totals.calories) : '---'}</div>
+      </div>
+      <div class="nf-medium-bar"></div>
+      <div class="nf-dv-header"><span class="nf-dv">% Daily Value*</span></div>
+      <div class="nf-thin-line"></div>
+      ${row('Total Fat', 'totalFat', false, true)}
+      <div class="nf-thin-line"></div>
+      ${row('Saturated Fat', 'saturatedFat', true, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Trans Fat', 'transFat', true, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Cholesterol', 'cholesterol', false, true)}
+      <div class="nf-thin-line"></div>
+      ${row('Sodium', 'sodium', false, true)}
+      <div class="nf-thin-line"></div>
+      ${row('Total Carbohydrate', 'totalCarbs', false, true)}
+      <div class="nf-thin-line"></div>
+      ${row('Dietary Fiber', 'dietaryFiber', true, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Total Sugars', 'totalSugars', true, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Incl. Added Sugars', 'addedSugars', true, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Protein', 'protein', false, true)}
+      <div class="nf-thick-bar"></div>
+      ${row('Vitamin D', 'vitaminD', false, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Calcium', 'calcium', false, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Iron', 'iron', false, false)}
+      <div class="nf-thin-line"></div>
+      ${row('Potassium', 'potassium', false, false)}
+      <div class="nf-medium-bar"></div>
+      <div class="nf-footnote">* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.</div>
+    </div>
+  `;
+}
+
 function openNutritionModal(meal) {
   const container = document.getElementById('nutrition-label-container');
   document.getElementById('nutrition-modal-meal-name').textContent = meal.name;
   document.getElementById('nutrition-overlay').classList.add('open');
   container.innerHTML = renderNutritionLabel(meal);
+}
+
+function openDayNutritionModal(meals, dayLabel) {
+  const container = document.getElementById('nutrition-label-container');
+  document.getElementById('nutrition-modal-meal-name').textContent = dayLabel;
+  document.getElementById('nutrition-overlay').classList.add('open');
+  container.innerHTML = renderDayNutritionLabel(meals, dayLabel);
 }
 
 function closeNutritionModal() {

@@ -34,23 +34,23 @@ const MEALS = [
   {
     id: "banana-greek-yogurt-bowl",
     name: "Banana Greek Yogurt Bowl",
-    description: "Creamy Greek yogurt topped with fresh banana slices and a drizzle of honey.",
+    description: "Greek yogurt topped with banana slices and a drizzle of honey.",
     category: "Breakfast",
     macros: { fats: 5, carbs: 75, fiber: 6, protein: 22 },
     ingredients: [
       { name: "Plain Greek yogurt", amount: "1 cup", section: "Dairy", detail: "Non-fat vanilla Greek yogurt (e.g. Fage 0%, Chobani)" },
-      { name: "Banana", amount: "2 medium", section: "Produce", detail: "Ripe yellow bananas with a few brown spots for sweetness" },
-      { name: "Honey", amount: "1 tbsp", section: "Pantry and Grains", detail: "Raw wildflower honey or any pure honey" }
+      { name: "Banana", amount: "2 medium", section: "Produce", detail: "Medium bananas" },
+      { name: "Honey", amount: "1 tbsp", section: "Pantry and Grains", detail: "Raw Honey" }
     ]
   },
   {
     id: "overnight-oats-blueberries",
     name: "Overnight Oats with Blueberries",
-    description: "Hearty rolled oats soaked overnight in milk and topped with fresh blueberries.",
+    description: "Steel cut oats soaked overnight in milk and topped with fresh blueberries.",
     category: "Breakfast",
     macros: { fats: 10, carbs: 105, fiber: 14, protein: 25 },
     ingredients: [
-      { name: "Rolled oats", amount: "1.5 cups", section: "Pantry and Grains", detail: "Old-fashioned rolled oats (not instant or steel-cut)" },
+      { name: "Rolled oats", amount: "1.5 cups", section: "Pantry and Grains", detail: "Steel cut oats (not instant)" },
       { name: "Low-fat milk", amount: "1.5 cups", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
       { name: "Blueberries", amount: "1 cup", section: "Produce", detail: "Fresh or frozen wild blueberries" }
     ]

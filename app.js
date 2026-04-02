@@ -1,7 +1,8 @@
 /* ─── STATE ─── */
 const SLOTS = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
 const SECTIONS = ['Produce', 'Dairy', 'Meat and Seafood', 'Pantry and Grains', 'Canned and Jarred', 'Refrigerated', 'Frozen'];
-const FIBER_TARGET = 30; // grams per day
+const MACRO_TARGETS = { fats: 65, carbs: 300, fiber: 30, protein: 120 }; // grams per day
+const FIBER_TARGET = MACRO_TARGETS.fiber; // backward compat
 const DAY_ABBRS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -24,7 +25,10 @@ let state = {
   masterMeals: [],
   chatHistory: [],
   dateRangeStart: null,      // ISO date string
-  dateRangeLength: 7         // number of days
+  dateRangeLength: 7,        // number of days
+  allergens: [],             // e.g. ['Peanuts', 'Shellfish']
+  dietGoals: '',             // free-text diet description
+  ingredientTiers: {}        // { "banana": "S", "eggs": "A", ... }
 };
 
 /* ─── DATE HELPERS ─── */
@@ -103,6 +107,9 @@ function loadState() {
       state.chatHistory = parsed.chatHistory || [];
       state.dateRangeStart = parsed.dateRangeStart || null;
       state.dateRangeLength = parsed.dateRangeLength || 7;
+      state.allergens = parsed.allergens || [];
+      state.dietGoals = parsed.dietGoals || '';
+      state.ingredientTiers = parsed.ingredientTiers || {};
       if (parsed.customMeals) state._savedCustomMeals = parsed.customMeals;
     }
   } catch (e) { /* start fresh */ }
@@ -137,7 +144,10 @@ function saveState() {
     chatHistory: state.chatHistory,
     customMeals: customMeals,
     dateRangeStart: state.dateRangeStart,
-    dateRangeLength: state.dateRangeLength
+    dateRangeLength: state.dateRangeLength,
+    allergens: state.allergens,
+    dietGoals: state.dietGoals,
+    ingredientTiers: state.ingredientTiers
   }));
 }
 
@@ -192,14 +202,17 @@ function showUpdateBanner() {
 
 /* ─── NAVIGATION ─── */
 function bindNav() {
+  const pages = ['planner', 'grocery', 'preferences'];
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       state.currentPage = tab.dataset.page;
-      document.getElementById('page-planner').style.display = state.currentPage === 'planner' ? '' : 'none';
-      document.getElementById('page-grocery').style.display = state.currentPage === 'grocery' ? '' : 'none';
+      pages.forEach(p => {
+        document.getElementById('page-' + p).style.display = state.currentPage === p ? '' : 'none';
+      });
       if (state.currentPage === 'grocery') renderGrocery();
+      if (state.currentPage === 'preferences') renderPreferences();
     });
   });
 }
@@ -212,7 +225,7 @@ function renderDayTabs() {
 
   // All tab
   const allBtn = document.createElement('button');
-  allBtn.className = 'day-tab' + (state.currentDay === 'All' ? ' active' : '');
+  allBtn.className = 'day-tab today' + (state.currentDay === 'All' ? ' active' : '');
   allBtn.textContent = 'All';
   allBtn.addEventListener('click', () => {
     state.currentDay = 'All';
@@ -226,7 +239,6 @@ function renderDayTabs() {
     const btn = document.createElement('button');
     btn.className = 'day-tab' + (state.currentDay === iso ? ' active' : '');
     btn.textContent = formatDateShort(iso);
-    if (iso === todayISO()) btn.classList.add('today');
     btn.addEventListener('click', () => {
       state.currentDay = iso;
       renderDayTabs();
@@ -257,13 +269,26 @@ function renderAllMeals(container) {
   categories.forEach(cat => {
     const meals = state.masterMeals.filter(m => m.category === cat);
     if (meals.length === 0) return;
+
+    const section = document.createElement('div');
+    section.className = 'category-section';
+
     const header = document.createElement('div');
     header.className = 'category-header';
-    header.textContent = cat;
-    container.appendChild(header);
-    meals.forEach(meal => {
-      container.appendChild(createMealCard(meal));
+    header.innerHTML = `<span class="category-toggle-icon">&#9660;</span> ${esc(cat)} <span class="category-count">(${meals.length})</span>`;
+
+    const body = document.createElement('div');
+    body.className = 'category-body';
+    meals.forEach(meal => body.appendChild(createMealCard(meal)));
+
+    header.addEventListener('click', () => {
+      const collapsed = body.classList.toggle('category-collapsed');
+      header.querySelector('.category-toggle-icon').textContent = collapsed ? '\u25B6' : '\u25BC';
     });
+
+    section.appendChild(header);
+    section.appendChild(body);
+    container.appendChild(section);
   });
 }
 
@@ -348,26 +373,34 @@ function renderDayView(container, dateISO) {
     }
   });
 
-  const fiberPct = Math.min(100, Math.round((totals.fiber / FIBER_TARGET) * 100));
+  const macroBars = ['fats', 'carbs', 'fiber', 'protein'].map(key => {
+    const pct = Math.min(100, Math.round((totals[key] / MACRO_TARGETS[key]) * 100));
+    const label = key.charAt(0).toUpperCase() + key.slice(1);
+    return `
+      <div class="macro-bar-container">
+        <div class="macro-bar-label" data-macro="${key}">${label}: ${totals[key]}g / ${MACRO_TARGETS[key]}g (${pct}%)</div>
+        <div class="macro-bar-track">
+          <div class="macro-bar-fill macro-bar-${key}" style="width: ${pct}%"></div>
+        </div>
+      </div>`;
+  }).join('');
 
   const summary = document.createElement('div');
   summary.className = 'day-summary';
   summary.innerHTML = `
-    <div class="day-summary-title">${formatDateFull(dateISO)}</div>
+    <div class="day-summary-header">
+      <div class="day-summary-title">${formatDateFull(dateISO)}</div>
+      <button class="nutrition-badge day-nf-badge" data-date="${dateISO}" title="View Daily Nutrition Facts">NF</button>
+    </div>
     <div class="day-macros">
       <span>Fats: ${totals.fats}g</span>
       <span>Carbs: ${totals.carbs}g</span>
       <span>Fiber: ${totals.fiber}g</span>
       <span>Protein: ${totals.protein}g</span>
     </div>
-    <div class="fiber-bar-container">
-      <div class="fiber-bar-label">Fiber: ${totals.fiber}g / ${FIBER_TARGET}g (${fiberPct}%)</div>
-      <div class="fiber-bar-track">
-        <div class="fiber-bar-fill" style="width: ${fiberPct}%"></div>
-      </div>
-    </div>
-    <div class="day-note">${getDayNote(dateISO)}</div>
+    <div class="macro-bars">${macroBars}</div>
   `;
+
   container.appendChild(summary);
 
   // Meal slots
@@ -939,10 +972,334 @@ function bindNutritionDelegation() {
     if (!badge) return;
     e.stopPropagation();
     e.preventDefault();
+    // Day NF badge — open day nutrition modal
+    if (badge.classList.contains('day-nf-badge')) {
+      const dateISO = badge.dataset.date;
+      if (!dateISO) return;
+      const dayMeals = [];
+      SLOTS.forEach(slot => {
+        const meal = getMeal(state.assignments[`${dateISO}-${slot}`]);
+        if (meal) dayMeals.push(meal);
+      });
+      openDayNutritionModal(dayMeals, formatDateFull(dateISO));
+      return;
+    }
     const mealId = badge.dataset.mealId;
     const meal = getMeal(mealId);
     if (meal) openNutritionModal(meal);
   }, true);
+}
+
+/* ─── PREFERENCES PAGE ─── */
+
+const ALLERGENS = [
+  'Milk', 'Eggs', 'Peanuts', 'Tree Nuts', 'Wheat', 'Soy',
+  'Fish', 'Shellfish', 'Sesame', 'Mustard'
+];
+
+let prefsInitialized = false;
+
+function getAllIngredientNames() {
+  const names = new Set();
+  state.masterMeals.forEach(m => m.ingredients.forEach(i => names.add(i.name)));
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
+function renderPreferences() {
+  // Allergens checklist
+  const checklist = document.getElementById('allergen-checklist');
+  const tagsEl = document.getElementById('allergen-tags');
+
+  function renderAllergenChecklist() {
+    checklist.innerHTML = ALLERGENS.map(a => {
+      const checked = state.allergens.includes(a) ? 'checked' : '';
+      return `<label class="allergen-item"><input type="checkbox" value="${esc(a)}" ${checked}><span>${esc(a)}</span></label>`;
+    }).join('');
+  }
+
+  function renderAllergenTags() {
+    // Show tags only for custom (non-preset) allergens
+    const custom = state.allergens.filter(a => !ALLERGENS.includes(a));
+    tagsEl.innerHTML = custom.map(a =>
+      `<span class="allergen-tag">${esc(a)}<button class="allergen-tag-x" data-allergen="${esc(a)}">&times;</button></span>`
+    ).join('');
+  }
+
+  renderAllergenChecklist();
+  renderAllergenTags();
+
+  if (!prefsInitialized) {
+    checklist.addEventListener('change', e => {
+      if (e.target.type !== 'checkbox') return;
+      const val = e.target.value;
+      if (e.target.checked) {
+        if (!state.allergens.includes(val)) state.allergens.push(val);
+      } else {
+        state.allergens = state.allergens.filter(a => a !== val);
+      }
+      renderAllergenTags();
+      saveState();
+    });
+
+    tagsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.allergen-tag-x');
+      if (!btn) return;
+      const val = btn.dataset.allergen;
+      state.allergens = state.allergens.filter(a => a !== val);
+      renderAllergenChecklist();
+      renderAllergenTags();
+      saveState();
+    });
+
+    // "Other" custom allergen input
+    const otherInput = document.getElementById('allergen-other');
+    otherInput.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const val = otherInput.value.trim();
+      if (val && !state.allergens.includes(val)) {
+        state.allergens.push(val);
+        renderAllergenTags();
+        saveState();
+      }
+      otherInput.value = '';
+    });
+
+    // Diet goals
+    const goalsEl = document.getElementById('diet-goals');
+    goalsEl.value = state.dietGoals;
+    goalsEl.addEventListener('input', () => {
+      state.dietGoals = goalsEl.value;
+      saveState();
+    });
+  }
+
+  // Tier list
+  renderTierList();
+  prefsInitialized = true;
+}
+
+function renderTierList() {
+  const bank = document.getElementById('tier-bank');
+  const allIngredients = getAllIngredientNames();
+
+  // Clear tier drops
+  document.querySelectorAll('.tier-drop').forEach(d => d.innerHTML = '');
+  bank.innerHTML = '';
+
+  allIngredients.forEach(name => {
+    let tier = state.ingredientTiers[name];
+    // migrate old "never" tier
+    if (tier === 'never') { tier = 'try'; state.ingredientTiers[name] = 'try'; }
+    if (tier === 'trash') return; // trashed — don't render
+    const chip = createIngredientChip(name);
+    if (tier) {
+      const drop = document.querySelector(`.tier-drop[data-tier="${tier}"]`);
+      if (drop) { drop.appendChild(chip); return; }
+    }
+    bank.appendChild(chip);
+  });
+
+  // Bind drag-and-drop for tier zones and bank
+  bindTierDragDrop();
+}
+
+// Click-to-pick state
+let pickedChip = null;
+let pickedGhost = null;
+
+function pickUpChip(chip) {
+  // If clicking the same chip again, cancel
+  if (pickedChip === chip) { dropPickedChip(); return; }
+  // If another chip was picked, cancel it first
+  if (pickedChip) dropPickedChip();
+
+  pickedChip = chip;
+  chip.classList.add('picked');
+
+  pickedGhost = chip.cloneNode(true);
+  pickedGhost.className = 'tier-chip tier-chip-ghost picked-ghost';
+  pickedGhost.style.position = 'fixed';
+  pickedGhost.style.pointerEvents = 'none';
+  pickedGhost.style.zIndex = '9999';
+  pickedGhost.style.display = 'none';
+  document.body.appendChild(pickedGhost);
+
+  document.addEventListener('mousemove', movePickedGhost);
+}
+
+function movePickedGhost(e) {
+  if (!pickedGhost) return;
+  pickedGhost.style.display = '';
+  pickedGhost.style.left = (e.clientX + 12) + 'px';
+  pickedGhost.style.top = (e.clientY - 14) + 'px';
+}
+
+function dropPickedChip() {
+  if (pickedChip) pickedChip.classList.remove('picked');
+  if (pickedGhost && pickedGhost.parentNode) pickedGhost.parentNode.removeChild(pickedGhost);
+  document.removeEventListener('mousemove', movePickedGhost);
+  pickedChip = null;
+  pickedGhost = null;
+  document.querySelectorAll('.tier-drop, .tier-bank, .tier-trash').forEach(el => el.classList.remove('drag-over'));
+}
+
+function placePickedChip(zone) {
+  if (!pickedChip) return;
+  const name = pickedChip.dataset.ingredient;
+  const isTrash = zone.classList.contains('tier-trash');
+
+  if (isTrash) {
+    pickedChip.remove();
+    state.ingredientTiers[name] = 'trash';
+  } else {
+    zone.appendChild(pickedChip);
+    const tier = zone.dataset.tier || null;
+    if (tier) {
+      state.ingredientTiers[name] = tier;
+    } else {
+      delete state.ingredientTiers[name];
+    }
+  }
+  saveState();
+  dropPickedChip();
+}
+
+function createIngredientChip(name) {
+  const chip = document.createElement('div');
+  chip.className = 'tier-chip';
+  chip.textContent = name;
+  chip.draggable = true;
+  chip.dataset.ingredient = name;
+
+  // Click to pick up
+  chip.addEventListener('click', e => {
+    e.stopPropagation();
+    pickUpChip(chip);
+  });
+
+  chip.addEventListener('dragstart', e => {
+    // Cancel any picked chip when starting a real drag
+    if (pickedChip) dropPickedChip();
+    e.dataTransfer.setData('text/plain', name);
+    chip.classList.add('dragging');
+  });
+  chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+
+  // Touch drag support
+  let touchClone = null;
+  let touchOffsetX = 0, touchOffsetY = 0;
+
+  chip.addEventListener('touchstart', e => {
+    const touch = e.touches[0];
+    const rect = chip.getBoundingClientRect();
+    touchOffsetX = touch.clientX - rect.left;
+    touchOffsetY = touch.clientY - rect.top;
+
+    touchClone = chip.cloneNode(true);
+    touchClone.className = 'tier-chip dragging tier-chip-ghost';
+    touchClone.style.position = 'fixed';
+    touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+    touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+    touchClone.style.zIndex = '9999';
+    touchClone.style.pointerEvents = 'none';
+    document.body.appendChild(touchClone);
+    chip.classList.add('dragging');
+  }, { passive: true });
+
+  chip.addEventListener('touchmove', e => {
+    if (!touchClone) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+    touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+
+    // Highlight drop target
+    document.querySelectorAll('.tier-drop, .tier-bank, .tier-trash').forEach(el => el.classList.remove('drag-over'));
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const dropZone = target?.closest('.tier-drop, .tier-bank, .tier-trash');
+    if (dropZone) dropZone.classList.add('drag-over');
+  }, { passive: false });
+
+  chip.addEventListener('touchend', e => {
+    if (!touchClone) return;
+    const touch = e.changedTouches[0];
+    if (touchClone.parentNode) touchClone.parentNode.removeChild(touchClone);
+    touchClone = null;
+    chip.classList.remove('dragging');
+
+    document.querySelectorAll('.tier-drop, .tier-bank, .tier-trash').forEach(el => el.classList.remove('drag-over'));
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const trashZone = target?.closest('.tier-trash');
+    if (trashZone) {
+      chip.remove();
+      state.ingredientTiers[name] = 'trash';
+      saveState();
+      return;
+    }
+    const dropZone = target?.closest('.tier-drop, .tier-bank');
+    if (dropZone) {
+      dropZone.appendChild(chip);
+      const tier = dropZone.dataset.tier || null;
+      if (tier) {
+        state.ingredientTiers[name] = tier;
+      } else {
+        delete state.ingredientTiers[name];
+      }
+      saveState();
+    }
+  });
+
+  return chip;
+}
+
+function bindTierDragDrop() {
+  const allZones = document.querySelectorAll('.tier-drop, .tier-bank, .tier-trash');
+
+  allZones.forEach(zone => {
+    // Drag-and-drop
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const name = e.dataTransfer.getData('text/plain');
+      const chip = document.querySelector(`.tier-chip.dragging[data-ingredient="${CSS.escape(name)}"]`);
+      if (!chip) return;
+      if (zone.classList.contains('tier-trash')) {
+        chip.remove();
+        state.ingredientTiers[name] = 'trash';
+      } else {
+        zone.appendChild(chip);
+        const tier = zone.dataset.tier || null;
+        if (tier) { state.ingredientTiers[name] = tier; }
+        else { delete state.ingredientTiers[name]; }
+      }
+      saveState();
+    });
+
+    // Click-to-place
+    zone.addEventListener('click', e => {
+      if (!pickedChip) return;
+      // Don't trigger if they clicked a chip inside the zone (that would pick up that chip instead)
+      if (e.target.closest('.tier-chip')) return;
+      placePickedChip(zone);
+    });
+
+    // Hover highlight when a chip is picked
+    zone.addEventListener('mouseenter', () => { if (pickedChip) zone.classList.add('drag-over'); });
+    zone.addEventListener('mouseleave', () => zone.classList.remove('drag-over'));
+  });
+
+  // Cancel pick on Escape or clicking outside
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && pickedChip) dropPickedChip(); });
+  document.addEventListener('click', e => {
+    if (!pickedChip) return;
+    if (e.target.closest('.tier-chip, .tier-drop, .tier-bank, .tier-trash')) return;
+    dropPickedChip();
+  });
 }
 
 /* ─── HELPERS ─── */
