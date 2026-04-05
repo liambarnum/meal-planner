@@ -2,19 +2,8 @@
 const SLOTS = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
 const SECTIONS = ['Produce', 'Dairy', 'Meat and Seafood', 'Pantry and Grains', 'Canned and Jarred', 'Refrigerated', 'Frozen'];
 const MACRO_TARGETS = { fats: 65, carbs: 300, fiber: 30, protein: 120 }; // grams per day
-const FIBER_TARGET = MACRO_TARGETS.fiber; // backward compat
 const DAY_ABBRS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-const DAY_NOTES = {
-  0: "Prep day — batch-cook fiber-rich grains and roast vegetables for the week.",
-  1: "Start strong with high-fiber breakfast and prebiotic-rich foods.",
-  2: "Focus on fermented foods and diverse plant fibers today.",
-  3: "Midweek balance — lean proteins with plenty of colorful vegetables.",
-  4: "Increase omega-3 intake to support gut lining repair.",
-  5: "Polyphenol-rich foods today — berries, dark chocolate, green tea.",
-  6: "Flexible day — maintain fiber goals while enjoying variety."
-};
 
 let state = {
   currentPage: 'planner',
@@ -63,10 +52,6 @@ function formatDateFull(iso) {
   return `${DAY_FULL[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 }
 
-function getDayNote(iso) {
-  return DAY_NOTES[parseDate(iso).getDay()];
-}
-
 function getDateRange() {
   const dates = [];
   for (let i = 0; i < state.dateRangeLength; i++) {
@@ -92,6 +77,7 @@ function init() {
   bindClear();
   bindNutritionModal();
   bindNutritionDelegation();
+  bindDeleteModal();
   registerSW();
 }
 
@@ -335,8 +321,18 @@ function createMealCard(meal) {
   const card = document.createElement('div');
   card.className = 'meal-card';
   card.innerHTML = `
-    <div class="meal-card-name">${esc(meal.name)}</div>
-    <div class="meal-card-desc">${esc(meal.description)}</div>
+    <div class="meal-card-top">
+      <div>
+        <div class="meal-card-name">${esc(meal.name)}</div>
+        <div class="meal-card-desc">${esc(meal.description)}</div>
+      </div>
+      <button class="meal-delete-btn" data-meal-id="${esc(meal.id)}" title="Delete meal">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
+    </div>
     <div class="meal-card-actions">
       <div class="macro-badge">
         <span>F: ${meal.macros.fats}g</span>
@@ -350,6 +346,7 @@ function createMealCard(meal) {
   `;
   bindIngredientsToggle(card);
   card.addEventListener('click', (e) => {
+    if (e.target.closest('.meal-delete-btn')) return;
     if (e.target.closest('.nutrition-badge')) return;
     if (e.target.closest('.ingredients-toggle') || e.target.closest('.ingredients-list')) return;
     openModal(meal.id);
@@ -845,7 +842,7 @@ function buildSystemPrompt() {
 DIETARY GOALS:
 - Promote gut health through high-fiber, diverse plant-based foods
 - Support weight loss with balanced macros and portion control
-- Target ${FIBER_TARGET}g of fiber per day
+- Target ${MACRO_TARGETS.fiber}g of fiber per day
 - Encourage fermented foods, prebiotics, and polyphenol-rich ingredients
 
 DATE RANGE: ${formatDateShort(state.dateRangeStart)} to ${formatDateShort(addDays(state.dateRangeStart, state.dateRangeLength - 1))}
@@ -988,6 +985,46 @@ function bindNutritionDelegation() {
     const meal = getMeal(mealId);
     if (meal) openNutritionModal(meal);
   }, true);
+}
+
+/* ─── DELETE MEAL MODAL ─── */
+let deleteMealId = null;
+
+function bindDeleteModal() {
+  document.getElementById('delete-cancel').addEventListener('click', closeDeleteModal);
+  document.getElementById('delete-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeDeleteModal();
+  });
+  document.getElementById('delete-confirm').addEventListener('click', () => {
+    if (!deleteMealId) return;
+    const idx = state.masterMeals.findIndex(m => m.id === deleteMealId);
+    if (idx >= 0) state.masterMeals.splice(idx, 1);
+    for (const key in state.assignments) {
+      if (state.assignments[key] === deleteMealId) delete state.assignments[key];
+    }
+    saveState();
+    closeDeleteModal();
+    renderDayTabs();
+    renderPlanner();
+  });
+
+  // Delegate click on delete buttons
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.meal-delete-btn');
+    if (!btn) return;
+    e.stopPropagation();
+    const mealId = btn.dataset.mealId;
+    const meal = getMeal(mealId);
+    if (!meal) return;
+    deleteMealId = mealId;
+    document.getElementById('delete-meal-name').textContent = meal.name;
+    document.getElementById('delete-overlay').classList.add('open');
+  });
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-overlay').classList.remove('open');
+  deleteMealId = null;
 }
 
 /* ─── PREFERENCES PAGE ─── */
@@ -1143,6 +1180,25 @@ function dropPickedChip() {
   document.querySelectorAll('.tier-drop, .tier-bank, .tier-trash').forEach(el => el.classList.remove('drag-over'));
 }
 
+function insertChipInBank(bank, chip) {
+  const name = chip.dataset.ingredient.toLowerCase();
+  const children = [...bank.children];
+  const insertBefore = children.find(c => c.dataset.ingredient && c.dataset.ingredient.toLowerCase() > name);
+  if (insertBefore) {
+    bank.insertBefore(chip, insertBefore);
+  } else {
+    bank.appendChild(chip);
+  }
+}
+
+function placeChipInZone(chip, zone) {
+  if (zone.classList.contains('tier-bank')) {
+    insertChipInBank(zone, chip);
+  } else {
+    zone.appendChild(chip);
+  }
+}
+
 function placePickedChip(zone) {
   if (!pickedChip) return;
   const name = pickedChip.dataset.ingredient;
@@ -1152,7 +1208,7 @@ function placePickedChip(zone) {
     pickedChip.remove();
     state.ingredientTiers[name] = 'trash';
   } else {
-    zone.appendChild(pickedChip);
+    placeChipInZone(pickedChip, zone);
     const tier = zone.dataset.tier || null;
     if (tier) {
       state.ingredientTiers[name] = tier;
@@ -1185,31 +1241,44 @@ function createIngredientChip(name) {
   });
   chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
 
-  // Touch drag support
+  // Touch drag support — distinguish taps from drags
   let touchClone = null;
+  let touchStartX = 0, touchStartY = 0;
   let touchOffsetX = 0, touchOffsetY = 0;
+  let touchDragging = false;
+  const DRAG_THRESHOLD = 8;
 
   chip.addEventListener('touchstart', e => {
     const touch = e.touches[0];
     const rect = chip.getBoundingClientRect();
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
     touchOffsetX = touch.clientX - rect.left;
     touchOffsetY = touch.clientY - rect.top;
-
-    touchClone = chip.cloneNode(true);
-    touchClone.className = 'tier-chip dragging tier-chip-ghost';
-    touchClone.style.position = 'fixed';
-    touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
-    touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
-    touchClone.style.zIndex = '9999';
-    touchClone.style.pointerEvents = 'none';
-    document.body.appendChild(touchClone);
-    chip.classList.add('dragging');
+    touchDragging = false;
+    // Cancel any picked chip when starting a touch
+    if (pickedChip) dropPickedChip();
   }, { passive: true });
 
   chip.addEventListener('touchmove', e => {
-    if (!touchClone) return;
-    e.preventDefault();
     const touch = e.touches[0];
+    const dx = touch.clientX - touchStartX;
+    const dy = touch.clientY - touchStartY;
+
+    // Only start drag once finger moves past threshold
+    if (!touchDragging) {
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      touchDragging = true;
+      touchClone = chip.cloneNode(true);
+      touchClone.className = 'tier-chip dragging tier-chip-ghost';
+      touchClone.style.position = 'fixed';
+      touchClone.style.zIndex = '9999';
+      touchClone.style.pointerEvents = 'none';
+      document.body.appendChild(touchClone);
+      chip.classList.add('dragging');
+    }
+
+    e.preventDefault();
     touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
     touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
 
@@ -1221,10 +1290,20 @@ function createIngredientChip(name) {
   }, { passive: false });
 
   chip.addEventListener('touchend', e => {
-    if (!touchClone) return;
+    if (!touchDragging) {
+      // Short tap — let the click handler deal with it (pick up)
+      return;
+    }
+    // Suppress synthetic click after a drag
+    chip.addEventListener('click', function suppress(ev) {
+      ev.stopImmediatePropagation();
+      chip.removeEventListener('click', suppress, true);
+    }, { once: true, capture: true });
+
     const touch = e.changedTouches[0];
-    if (touchClone.parentNode) touchClone.parentNode.removeChild(touchClone);
+    if (touchClone && touchClone.parentNode) touchClone.parentNode.removeChild(touchClone);
     touchClone = null;
+    touchDragging = false;
     chip.classList.remove('dragging');
 
     document.querySelectorAll('.tier-drop, .tier-bank, .tier-trash').forEach(el => el.classList.remove('drag-over'));
@@ -1238,7 +1317,7 @@ function createIngredientChip(name) {
     }
     const dropZone = target?.closest('.tier-drop, .tier-bank');
     if (dropZone) {
-      dropZone.appendChild(chip);
+      placeChipInZone(chip, dropZone);
       const tier = dropZone.dataset.tier || null;
       if (tier) {
         state.ingredientTiers[name] = tier;
@@ -1272,7 +1351,7 @@ function bindTierDragDrop() {
         chip.remove();
         state.ingredientTiers[name] = 'trash';
       } else {
-        zone.appendChild(chip);
+        placeChipInZone(chip, zone);
         const tier = zone.dataset.tier || null;
         if (tier) { state.ingredientTiers[name] = tier; }
         else { delete state.ingredientTiers[name]; }

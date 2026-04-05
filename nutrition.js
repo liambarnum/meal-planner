@@ -406,9 +406,7 @@ function calcDV(field, value) {
   return Math.round((value / dv) * 100);
 }
 
-function renderNutritionLabel(meal) {
-  const { totals, servingSizeGrams, hasAnyNutritionData } = computeMealNutrition(meal);
-
+function buildLabelHTML(totals, servingSizeGrams, servingLine, noDataText) {
   function row(label, field, indent, bold) {
     const val = totals[field];
     const display = formatNutrientValue(field, val);
@@ -418,21 +416,12 @@ function renderNutritionLabel(meal) {
     return `<div class="nf-row ${cls}"><span>${label} ${display}</span>${dvStr}</div>`;
   }
 
-  if (!hasAnyNutritionData) {
-    return `
-      <div class="nf-no-data">
-        <div class="nf-no-data-title">No Nutrition Data Available</div>
-        <div class="nf-no-data-text">Nutrition data is not available for this meal's ingredients.</div>
-      </div>
-    `;
-  }
-
   return `
     <div class="nutrition-label">
       <div class="nf-title">Nutrition Facts</div>
       <div class="nf-thick-bar"></div>
       <div class="nf-serving">
-        <div class="nf-serving-size"><span class="nf-bold">Serving size</span> 1 meal${servingSizeGrams ? ' (' + servingSizeGrams + 'g)' : ''}</div>
+        <div class="nf-serving-size">${servingLine}</div>
       </div>
       <div class="nf-thick-bar"></div>
       <div class="nf-calories-row">
@@ -473,6 +462,15 @@ function renderNutritionLabel(meal) {
       <div class="nf-footnote">* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.</div>
     </div>
   `;
+}
+
+function renderNutritionLabel(meal) {
+  const { totals, servingSizeGrams, hasAnyNutritionData } = computeMealNutrition(meal);
+  if (!hasAnyNutritionData) {
+    return `<div class="nf-no-data"><div class="nf-no-data-title">No Nutrition Data Available</div><div class="nf-no-data-text">Nutrition data is not available for this meal's ingredients.</div></div>`;
+  }
+  const servingLine = `<span class="nf-bold">Serving size</span> 1 meal${servingSizeGrams ? ' (' + servingSizeGrams + 'g)' : ''}`;
+  return buildLabelHTML(totals, servingSizeGrams, servingLine);
 }
 
 function computeDayNutrition(meals) {
@@ -494,66 +492,11 @@ function computeDayNutrition(meals) {
 
 function renderDayNutritionLabel(meals, dayLabel) {
   const { totals, servingSizeGrams, hasAnyNutritionData } = computeDayNutrition(meals);
-
-  function row(label, field, indent, bold) {
-    const val = totals[field];
-    const display = formatNutrientValue(field, val);
-    const dv = calcDV(field, val);
-    const dvStr = dv !== null ? `<span class="nf-dv">${dv}%</span>` : '';
-    const cls = [indent ? 'nf-indent' : '', bold ? 'nf-bold' : ''].filter(Boolean).join(' ');
-    return `<div class="nf-row ${cls}"><span>${label} ${display}</span>${dvStr}</div>`;
-  }
-
   if (!hasAnyNutritionData) {
     return `<div class="nf-no-data"><div class="nf-no-data-title">No Nutrition Data Available</div><div class="nf-no-data-text">No meals assigned for this day.</div></div>`;
   }
-
-  return `
-    <div class="nutrition-label">
-      <div class="nf-title">Nutrition Facts</div>
-      <div class="nf-thick-bar"></div>
-      <div class="nf-serving">
-        <div class="nf-serving-size"><span class="nf-bold">Daily total</span> ${meals.length} meal${meals.length !== 1 ? 's' : ''}${servingSizeGrams ? ' (' + servingSizeGrams + 'g)' : ''}</div>
-      </div>
-      <div class="nf-thick-bar"></div>
-      <div class="nf-calories-row">
-        <div class="nf-calories-label">Calories</div>
-        <div class="nf-calories-value">${totals.calories !== null ? Math.round(totals.calories) : '---'}</div>
-      </div>
-      <div class="nf-medium-bar"></div>
-      <div class="nf-dv-header"><span class="nf-dv">% Daily Value*</span></div>
-      <div class="nf-thin-line"></div>
-      ${row('Total Fat', 'totalFat', false, true)}
-      <div class="nf-thin-line"></div>
-      ${row('Saturated Fat', 'saturatedFat', true, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Trans Fat', 'transFat', true, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Cholesterol', 'cholesterol', false, true)}
-      <div class="nf-thin-line"></div>
-      ${row('Sodium', 'sodium', false, true)}
-      <div class="nf-thin-line"></div>
-      ${row('Total Carbohydrate', 'totalCarbs', false, true)}
-      <div class="nf-thin-line"></div>
-      ${row('Dietary Fiber', 'dietaryFiber', true, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Total Sugars', 'totalSugars', true, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Incl. Added Sugars', 'addedSugars', true, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Protein', 'protein', false, true)}
-      <div class="nf-thick-bar"></div>
-      ${row('Vitamin D', 'vitaminD', false, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Calcium', 'calcium', false, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Iron', 'iron', false, false)}
-      <div class="nf-thin-line"></div>
-      ${row('Potassium', 'potassium', false, false)}
-      <div class="nf-medium-bar"></div>
-      <div class="nf-footnote">* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.</div>
-    </div>
-  `;
+  const servingLine = `<span class="nf-bold">Daily total</span> ${meals.length} meal${meals.length !== 1 ? 's' : ''}${servingSizeGrams ? ' (' + servingSizeGrams + 'g)' : ''}`;
+  return buildLabelHTML(totals, servingSizeGrams, servingLine);
 }
 
 function openNutritionModal(meal) {
@@ -574,7 +517,3 @@ function closeNutritionModal() {
   document.getElementById('nutrition-overlay').classList.remove('open');
 }
 
-// Seed static data on init — just ensures all ingredients are available
-function initNutritionData(meals) {
-  // Static data is used directly from STATIC_NUTRITION, no seeding needed
-}
