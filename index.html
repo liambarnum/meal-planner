@@ -122,6 +122,20 @@
         <div class="tier-bank" id="tier-bank"></div>
       </section>
 
+      <!-- Meal Generation -->
+      <section class="prefs-section">
+        <h3 class="prefs-section-title">Generate Meals from Preferences</h3>
+        <p class="prefs-section-desc">Export your preferences, run the CLI script to generate meals with Claude, then import them back.</p>
+        <div class="meal-gen-actions">
+          <button id="export-prefs-btn" class="btn btn-secondary">Export Preferences</button>
+          <label class="btn btn-secondary meal-import-label">
+            Import Generated Meals
+            <input type="file" id="import-meals-input" accept=".json" style="display:none">
+          </label>
+        </div>
+        <p class="prefs-ai-hint" id="import-status"></p>
+      </section>
+
     </div>
   </div>
 

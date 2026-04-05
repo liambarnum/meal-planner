@@ -1,0 +1,71 @@
+[
+  {
+    "id": "beef-broccoli-cheddar-scramble",
+    "name": "Beef Broccoli Cheddar Scramble",
+    "description": "High-protein scramble with ground beef, broccoli, and melted cheddar over eggs.",
+    "category": "Breakfast",
+    "macros": { "fats": 22, "carbs": 8, "fiber": 3, "protein": 42 },
+    "ingredients": [
+      { "name": "Eggs", "amount": "3 large", "section": "Refrigerated" },
+      { "name": "Ground beef", "amount": "4 oz", "section": "Meat and Seafood" },
+      { "name": "Broccoli", "amount": "1 cup", "section": "Produce" },
+      { "name": "Cheddar cheese", "amount": "1 oz", "section": "Dairy" },
+      { "name": "Olive oil", "amount": "1 tsp", "section": "Pantry and Grains" }
+    ]
+  },
+  {
+    "id": "salmon-sweet-potato-green-beans",
+    "name": "Salmon with Sweet Potato and Green Beans",
+    "description": "Baked salmon fillet alongside roasted sweet potato and steamed green beans with lemon.",
+    "category": "Dinner",
+    "macros": { "fats": 16, "carbs": 38, "fiber": 7, "protein": 38 },
+    "ingredients": [
+      { "name": "Salmon fillet", "amount": "6 oz", "section": "Meat and Seafood" },
+      { "name": "Sweet potatoes", "amount": "1 medium", "section": "Produce" },
+      { "name": "Green beans", "amount": "1 cup", "section": "Produce" },
+      { "name": "Olive oil", "amount": "1 tsp", "section": "Pantry and Grains" },
+      { "name": "Lemon juice", "amount": "1 tbsp", "section": "Produce" }
+    ]
+  },
+  {
+    "id": "black-bean-egg-breakfast-bowl",
+    "name": "Black Bean Egg Breakfast Bowl",
+    "description": "Fried eggs over seasoned black beans with salsa and feta on sourdough toast.",
+    "category": "Breakfast",
+    "macros": { "fats": 18, "carbs": 42, "fiber": 12, "protein": 30 },
+    "ingredients": [
+      { "name": "Eggs", "amount": "2 large", "section": "Refrigerated" },
+      { "name": "Black beans", "amount": "0.75 cup", "section": "Canned and Jarred" },
+      { "name": "Salsa", "amount": "3 tbsp", "section": "Canned and Jarred" },
+      { "name": "Feta cheese", "amount": "1 oz", "section": "Dairy" },
+      { "name": "Sourdough bread", "amount": "1 slice", "section": "Pantry and Grains" }
+    ]
+  },
+  {
+    "id": "turkey-broccoli-parmesan-bake",
+    "name": "Turkey Broccoli Parmesan Bake",
+    "description": "Ground turkey and broccoli baked with parmesan and garlic until golden.",
+    "category": "Dinner",
+    "macros": { "fats": 14, "carbs": 10, "fiber": 4, "protein": 40 },
+    "ingredients": [
+      { "name": "Ground turkey", "amount": "6 oz", "section": "Meat and Seafood" },
+      { "name": "Broccoli", "amount": "1.5 cups", "section": "Produce" },
+      { "name": "Parmesan cheese", "amount": "2 tbsp", "section": "Dairy" },
+      { "name": "Garlic", "amount": "2 cloves", "section": "Produce" },
+      { "name": "Olive oil", "amount": "1 tsp", "section": "Pantry and Grains" }
+    ]
+  },
+  {
+    "id": "greek-yogurt-chia-berry-bowl",
+    "name": "Greek Yogurt Chia Berry Bowl",
+    "description": "Thick Greek yogurt layered with chia seeds, mixed berries, and a drizzle of honey.",
+    "category": "Snack",
+    "macros": { "fats": 6, "carbs": 32, "fiber": 10, "protein": 22 },
+    "ingredients": [
+      { "name": "Plain Greek yogurt", "amount": "1 cup", "section": "Dairy" },
+      { "name": "Chia seeds", "amount": "2 tbsp", "section": "Pantry and Grains" },
+      { "name": "Mixed berries", "amount": "0.5 cup", "section": "Frozen" },
+      { "name": "Honey", "amount": "1 tsp", "section": "Pantry and Grains" }
+    ]
+  }
+]

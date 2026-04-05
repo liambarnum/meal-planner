@@ -1110,6 +1110,54 @@ function renderPreferences() {
     });
   }
 
+  // Export / Import
+  if (!prefsInitialized) {
+    document.getElementById('export-prefs-btn').addEventListener('click', () => {
+      const prefs = {
+        ingredientTiers: state.ingredientTiers,
+        allergens: state.allergens,
+        dietGoals: state.dietGoals
+      };
+      const blob = new Blob([JSON.stringify(prefs, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'preferences.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    document.getElementById('import-meals-input').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('import-status');
+      const reader = new FileReader();
+      reader.onload = evt => {
+        try {
+          const meals = JSON.parse(evt.target.result);
+          if (!Array.isArray(meals)) throw new Error('Expected a JSON array of meals — make sure you\'re importing generated-meals.json, not preferences.json');
+          let added = 0;
+          for (const meal of meals) {
+            if (!meal.id || !meal.name || !meal.category) continue;
+            if (getMeal(meal.id)) continue;
+            state.masterMeals.push(meal);
+            added++;
+          }
+          saveState();
+          renderDayTabs();
+          renderPlanner();
+          statusEl.textContent = `✓ Imported ${added} meal${added !== 1 ? 's' : ''}.`;
+        } catch (err) {
+          statusEl.textContent = `✗ Import failed: ${err.message}`;
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+
   // Tier list
   renderTierList();
   prefsInitialized = true;

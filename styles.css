@@ -1265,6 +1265,17 @@ body {
   color: var(--gold);
 }
 
+.meal-gen-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.meal-import-label {
+  cursor: pointer;
+}
+
 /* Tier List */
 .tier-list {
   display: flex;
