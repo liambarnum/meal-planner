@@ -1,4 +1,17 @@
 {
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/liam/meal-planner && git add -A && git commit -m 'Auto-commit on exit' || true && git push || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(pkill -f \"python3 -m http.server 8000\")",
@@ -19,7 +32,22 @@
       "Bash(npx -y esbuild --bundle nutrition.js --format=esm --outfile=/dev/null)",
       "Bash(node -e \"require\\(''fs''\\).readFileSync\\(''/Users/liam/meal-planner/nutrition.js'',''utf8''\\)\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY\" -X POST -H \"Content-Type: application/json\" -d '{\"\"query\"\":\"\"banana\"\",\"\"dataType\"\":[\"\"SR Legacy\"\"],\"\"pageSize\"\":1}')",
-      "Bash(curl -s -w \"\\\\n%{http_code}\" \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY\" -X POST -H \"Content-Type: application/json\" -d '{\"\"\"\"query\"\"\"\":\"\"\"\"banana\"\"\"\",\"\"\"\"dataType\"\"\"\":[\"\"\"\"SR Legacy\"\"\"\"],\"\"\"\"pageSize\"\"\"\":1}')"
+      "Bash(curl -s -w \"\\\\n%{http_code}\" \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY\" -X POST -H \"Content-Type: application/json\" -d '{\"\"\"\"query\"\"\"\":\"\"\"\"banana\"\"\"\",\"\"\"\"dataType\"\"\"\":[\"\"\"\"SR Legacy\"\"\"\"],\"\"\"\"pageSize\"\"\"\":1}')",
+      "Bash(git status:*)",
+      "Bash(/opt/homebrew/bin/node --check /Users/liam/meal-planner/nutrition.js)",
+      "Bash(/usr/local/bin/node --check /Users/liam/meal-planner/nutrition.js)",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=banana+raw&pageSize=2&dataType=SR%20Legacy\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/food/173944?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&format=full\")",
+      "Bash(node fetch-nutrition.js)",
+      "Read(//usr/local/bin/**)",
+      "Read(//opt/homebrew/**)",
+      "Bash(/usr/local/bin/node /Users/liam/meal-planner/fetch-nutrition.js)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(/usr/local/bin/node --version)",
+      "Bash(bash fetch-nutrition.sh)",
+      "Bash(python3 fetch-nutrition.py)",
+      "Bash(buddy-reroll:*)"
     ]
   }
 }
