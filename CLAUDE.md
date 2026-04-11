@@ -61,6 +61,21 @@ Copy an existing entry, change the `id` to something unique, fill in all fields,
 
 Delete its object from the `MEALS` array. If it was assigned to any day slot, clear localStorage or the assignment will reference a missing meal.
 
+## Meal Authoring
+
+For any bulk meal work — generating new recipes, auditing `meals.js` for portion/unit issues, or cleaning up existing entries — delegate to the **`meal-author`** subagent (`.claude/agents/meal-author.md`). Its system prompt is the canonical source of unit conventions, portion ceilings, macro ranges, and cooking-sense rules; main Claude should not re-derive them.
+
+Every edit to meals (by any route — subagent, main Claude, or the standalone CLI) must pass:
+
+```sh
+node scripts/validate-meals.js               # validates meals.js
+node scripts/validate-meals.js generated-meals.json   # validates a generated batch
+```
+
+Exit 0 = clean, exit 1 = errors that must be fixed before committing. Warnings are acceptable but review them.
+
+The standalone `generate-meals.js` CLI script mirrors the subagent's rules for users who aren't running Claude Code. When you change rules in one, sync the other.
+
 ## Deployment
 
 No build step required. Serve all files from a static host. For GitHub Pages, push to a repo and enable Pages — all paths use relative URLs (`./`) so it works from any subdirectory.

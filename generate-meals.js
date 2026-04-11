@@ -62,7 +62,7 @@ function buildPrompt(prefs, existingMeals, count) {
 
   const existingList = existingMeals.map(m => `- ${m.name} (id: ${m.id})`).join('\n');
 
-  return `You are a meal planning assistant. Generate exactly ${count} new meal recipes as a JSON array.
+  return `You are authoring recipes for a single-adult meal planner. Generate exactly ${count} new meals as a JSON array. Each meal is ONE serving for ONE adult and must read like something a real person would cook and eat — not a pile of healthy ingredients.
 
 USER INGREDIENT PREFERENCES:
 ${tierDesc || '(no preferences set)'}
@@ -74,13 +74,47 @@ DIET GOALS: ${dietGoals || 'none specified'}
 EXISTING MEALS (do not duplicate these):
 ${existingList}
 
-RULES:
-- Prioritize S and A tier ingredients. Avoid D-tier and NEVER USE ingredients.
-- Each meal must have a unique id (kebab-case), name, category, description, macros, and ingredients.
-- Valid categories: Breakfast, Lunch, Snack, Dinner, Dessert
-- Valid ingredient sections: Produce, Dairy, Meat and Seafood, Pantry and Grains, Canned and Jarred, Refrigerated, Frozen
-- Macros are integers in grams (fats, carbs, fiber, protein). Calories are NOT included.
-- Ingredient amounts are human-readable strings like "1 cup", "2 tbsp", "3 oz".
+SCHEMA:
+- Required fields: id (kebab-case, unique), name, description, category, macros, ingredients.
+- Valid categories: Breakfast, Lunch, Snack, Dinner, Dessert.
+- Valid ingredient sections: Produce, Dairy, Meat and Seafood, Pantry and Grains, Canned and Jarred, Refrigerated, Frozen.
+- Macros are integers in grams: fats, carbs, fiber, protein. Calories are NOT included.
+
+UNIT CONVENTIONS (strict):
+- Proteins (meat, fish, tofu, tempeh): weight (oz, lb, g) OR count ("1 fillet", "2 thighs"). NEVER volume. "2 cups shredded chicken" is wrong — use "8 oz shredded".
+- Eggs: count with size, e.g. "3 large".
+- Liquids (broth, milk, juice): volume (cup, tbsp, fl oz, ml).
+- Dry grains (rice, oats, quinoa): volume, specify dry or cooked, e.g. "0.5 cup dry" or "1 cup cooked".
+- Cheese: weight (oz) or count ("2 slices").
+- Produce whole items: count + size ("1 medium apple"). Produce leafy/loose: volume ("2 cups spinach").
+- Herbs, spices, salt, oils: tsp / tbsp.
+
+SINGLE-SERVING SANITY CEILINGS:
+- Broth / stock: max 2 cups (hard limit 3).
+- Cooking oil: max 2 tbsp (hard limit 4).
+- Dry rice / grains: max 0.5 cup dry.
+- Cheese: max 2 oz.
+- Nuts / seeds: max 0.33 cup.
+- Honey / syrup: max 1 tbsp.
+
+MACRO RANGES (per single serving):
+- Breakfast: protein 10–45g, carbs 20–110g, fats 5–30g.
+- Lunch / Dinner: protein 20–60g, carbs 25–100g, fats 8–42g.
+- Snack: protein 3–30g, carbs 5–50g, fats 2–20g.
+- Dessert: protein 0–25g, carbs 10–60g, fats 0–20g.
+
+COOKING SENSE CHECKLIST — apply to every meal before finalizing:
+1. It is a dish (bowl, skillet, soup, sandwich, stir-fry), not three ingredients listed together.
+2. A normal home cook can make it in one session with standard equipment.
+3. Seasoning is present — salt + aromatics (garlic, onion, herbs, spice) for savory dishes.
+4. Balanced: protein + carb + vegetable for main meals, unless the category says otherwise.
+5. The description matches the ingredient list exactly — no implied ingredients missing.
+6. Ingredient portions are consistent with each other (not 8 oz protein + 0.25 cup veg).
+
+PREFERENCE RULES:
+- Prioritize S and A tier ingredients across the batch.
+- Avoid D-tier ingredients unless necessary.
+- Never use NEVER USE (trash) tier or allergens.
 
 OUTPUT FORMAT — respond with ONLY a valid JSON array, no other text:
 [
