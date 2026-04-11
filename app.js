@@ -17,7 +17,8 @@ let state = {
   dateRangeLength: 7,        // number of days
   allergens: [],             // e.g. ['Peanuts', 'Shellfish']
   dietGoals: '',             // free-text diet description
-  ingredientTiers: {}        // { "banana": "S", "eggs": "A", ... }
+  ingredientTiers: {},       // { "banana": "S", "eggs": "A", ... }
+  customIngredients: []      // user-added ingredient names not yet tied to any meal
 };
 
 /* ─── DATE HELPERS ─── */
@@ -96,6 +97,7 @@ function loadState() {
       state.allergens = parsed.allergens || [];
       state.dietGoals = parsed.dietGoals || '';
       state.ingredientTiers = parsed.ingredientTiers || {};
+      state.customIngredients = parsed.customIngredients || [];
       if (parsed.customMeals) state._savedCustomMeals = parsed.customMeals;
     }
   } catch (e) { /* start fresh */ }
@@ -133,7 +135,8 @@ function saveState() {
     dateRangeLength: state.dateRangeLength,
     allergens: state.allergens,
     dietGoals: state.dietGoals,
-    ingredientTiers: state.ingredientTiers
+    ingredientTiers: state.ingredientTiers,
+    customIngredients: state.customIngredients
   }));
 }
 
@@ -1039,6 +1042,7 @@ let prefsInitialized = false;
 function getAllIngredientNames() {
   const names = new Set();
   state.masterMeals.forEach(m => m.ingredients.forEach(i => names.add(i.name)));
+  (state.customIngredients || []).forEach(n => names.add(n));
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
@@ -1155,6 +1159,34 @@ function renderPreferences() {
         e.target.value = '';
       };
       reader.readAsText(file);
+    });
+  }
+
+  // Custom ingredient add
+  if (!prefsInitialized) {
+    const addInput = document.getElementById('tier-bank-add-input');
+    const addBtn = document.getElementById('tier-bank-add-btn');
+    const submitCustomIngredient = () => {
+      const raw = addInput.value.trim();
+      if (!raw) return;
+      const existing = getAllIngredientNames().find(n => n.toLowerCase() === raw.toLowerCase());
+      if (existing) {
+        if (state.ingredientTiers[existing] === 'trash') {
+          delete state.ingredientTiers[existing];
+          saveState();
+          renderTierList();
+        }
+        addInput.value = '';
+        return;
+      }
+      state.customIngredients.push(raw);
+      saveState();
+      addInput.value = '';
+      renderTierList();
+    };
+    addBtn.addEventListener('click', submitCustomIngredient);
+    addInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); submitCustomIngredient(); }
     });
   }
 

@@ -1360,6 +1360,48 @@ body {
   margin-bottom: 10px;
 }
 
+.tier-bank-add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tier-bank-add-input {
+  flex: 1;
+  padding: 9px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.88rem;
+  transition: border-color var(--transition);
+}
+
+.tier-bank-add-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.tier-bank-add-btn {
+  flex: 0 0 auto;
+  width: 38px;
+  padding: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.tier-bank-add-btn:hover {
+  background: var(--bg);
+  border-color: var(--gold);
+}
+
 .tier-bank {
   display: flex;
   flex-wrap: wrap;
