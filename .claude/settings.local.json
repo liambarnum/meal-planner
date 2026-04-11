@@ -1,17 +1,4 @@
 {
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd /Users/liam/meal-planner && git add -A && git commit -m 'Auto-commit on exit' || true && git push || true",
-            "timeout": 30
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(pkill -f \"python3 -m http.server 8000\")",
@@ -47,7 +34,21 @@
       "Bash(/usr/local/bin/node --version)",
       "Bash(bash fetch-nutrition.sh)",
       "Bash(python3 fetch-nutrition.py)",
-      "Bash(buddy-reroll:*)"
+      "Bash(buddy-reroll:*)",
+      "Bash(grep -r \"fetch-nutrition\\\\|nutrition\" /Users/liam/meal-planner/*.js)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/liam/meal-planner && git add -A && git commit -m 'Auto-commit on exit' || true && git push || true",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }
