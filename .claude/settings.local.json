@@ -35,7 +35,9 @@
       "Bash(bash fetch-nutrition.sh)",
       "Bash(python3 fetch-nutrition.py)",
       "Bash(buddy-reroll:*)",
-      "Bash(grep -r \"fetch-nutrition\\\\|nutrition\" /Users/liam/meal-planner/*.js)"
+      "Bash(grep -r \"fetch-nutrition\\\\|nutrition\" /Users/liam/meal-planner/*.js)",
+      "Bash(node scripts/validate-meals.js)",
+      "Bash(echo \"exit: $?\")"
     ]
   },
   "hooks": {
