@@ -116,6 +116,27 @@ const MEALS = [
     ]
   },
 
+  {
+    id: "black-bean-egg-breakfast-skillet",
+    name: "Black Bean and Egg Breakfast Skillet",
+    description: "Sizzling skillet of crispy potatoes, black beans, and fried eggs seasoned with smoked paprika and chili powder.",
+    category: "Breakfast",
+    macros: { fats: 15, carbs: 48, fiber: 12, protein: 28 },
+    ingredients: [
+      { name: "Eggs", amount: "3 large", section: "Dairy", detail: "Pasture-raised, fried or over-easy in the skillet" },
+      { name: "Black beans", amount: "0.5 cup", section: "Canned and Jarred", detail: "Canned, drained and rinsed" },
+      { name: "Potatoes", amount: "1 medium", section: "Produce", detail: "Yukon gold or russet, diced into small cubes" },
+      { name: "Olive oil", amount: "1 tsp", section: "Pantry and Grains", detail: "For the skillet" },
+      { name: "Garlic", amount: "2 cloves", section: "Produce", detail: "Minced" },
+      { name: "Smoked paprika", amount: "0.5 tsp", section: "Seasonings", detail: "For the potatoes and beans" },
+      { name: "Chili powder", amount: "0.5 tsp", section: "Seasonings", detail: "For heat and depth" },
+      { name: "Garlic powder", amount: "0.25 tsp", section: "Seasonings", detail: "Extra garlic layer" },
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Lemon juice", amount: "1 tbsp", section: "Produce", detail: "Squeezed over the top just before serving" }
+    ]
+  },
+
   // ─── LUNCH ───
   {
     id: "egg-drop-soup-ground-beef",
@@ -223,6 +244,40 @@ const MEALS = [
     ]
   },
 
+  {
+    id: "chicken-thigh-broccoli-rice-bowl",
+    name: "Soy-Glazed Chicken Thigh and Broccoli Rice Bowl",
+    description: "Boneless chicken thighs glazed with soy sauce and garlic over white rice with steamed broccoli and spicy kimchi.",
+    category: "Lunch",
+    macros: { fats: 18, carbs: 72, fiber: 8, protein: 52 },
+    ingredients: [
+      { name: "Boneless skinless chicken thighs", amount: "7 oz", section: "Meat and Seafood", detail: "Trimmed of excess fat, sliced into strips" },
+      { name: "White rice", amount: "0.5 cup dry", section: "Pantry and Grains", detail: "Long-grain white rice, cooked in water" },
+      { name: "Broccoli", amount: "2 cups", section: "Produce", detail: "Fresh florets, steamed or stir-fried until tender-crisp" },
+      { name: "Kimchi", amount: "0.5 cup", section: "Refrigerated", detail: "Traditional napa cabbage kimchi, drained slightly" },
+      { name: "Garlic", amount: "3 cloves", section: "Produce", detail: "Minced" },
+      { name: "Soy sauce", amount: "1.5 tbsp", section: "Pantry and Grains", detail: "Low-sodium soy sauce" },
+      { name: "Olive oil", amount: "1 tsp", section: "Pantry and Grains", detail: "For searing the chicken" },
+      { name: "Garlic powder", amount: "0.25 tsp", section: "Seasonings", detail: "Added to the glaze for depth" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Lemon juice", amount: "1 tbsp", section: "Produce", detail: "Stirred into the glaze at the end" }
+    ]
+  },
+
+  {
+    id: "greek-yogurt-chia-berry-snack",
+    name: "Greek Yogurt with Chia Seeds and Mixed Berries",
+    description: "Thick Greek yogurt stirred with chia seeds and topped with mixed berries and a drizzle of honey.",
+    category: "Snack",
+    macros: { fats: 9, carbs: 30, fiber: 10, protein: 22 },
+    ingredients: [
+      { name: "Plain Greek yogurt", amount: "1 cup", section: "Dairy", detail: "Non-fat plain Greek yogurt (e.g. Fage 0%, Chobani)" },
+      { name: "Chia seeds", amount: "1.5 tbsp", section: "Pantry and Grains", detail: "Black or white chia seeds, stirred in" },
+      { name: "Mixed berries", amount: "0.75 cup", section: "Produce", detail: "Fresh or frozen blend of strawberries, blueberries, and raspberries" },
+      { name: "Honey", amount: "1 tsp", section: "Pantry and Grains", detail: "Raw wildflower honey, drizzled on top" }
+    ]
+  },
+
   // ─── SNACK ───
   {
     id: "cottage-cheese-sliced-apple",
@@ -295,6 +350,28 @@ const MEALS = [
   },
 
   // ─── DINNER ───
+  {
+    id: "black-bean-beef-chili-white-rice",
+    name: "Black Bean and Ground Beef Chili over White Rice",
+    description: "Bold chili of 90/10 ground beef and black beans simmered with garlic, chili powder, and smoked paprika, served over white rice.",
+    category: "Dinner",
+    macros: { fats: 24, carbs: 82, fiber: 16, protein: 58 },
+    ingredients: [
+      { name: "90/10 Ground Beef", amount: "8 oz", section: "Meat and Seafood", detail: "90/10 lean ground beef, crumbled while browning" },
+      { name: "Black beans", amount: "1 cup", section: "Canned and Jarred", detail: "Canned, drained and rinsed" },
+      { name: "White rice", amount: "0.5 cup dry", section: "Pantry and Grains", detail: "Long-grain white rice, cooked in water" },
+      { name: "Canned diced tomatoes", amount: "0.75 cup", section: "Canned and Jarred", detail: "Fire-roasted preferred, drained of excess liquid" },
+      { name: "Garlic", amount: "3 cloves", section: "Produce", detail: "Minced" },
+      { name: "Yellow onion", amount: "0.5 medium", section: "Produce", detail: "Diced" },
+      { name: "Chicken broth", amount: "0.5 cup", section: "Canned and Jarred", detail: "Low-sodium, for simmering the chili" },
+      { name: "Olive oil", amount: "1 tsp", section: "Pantry and Grains", detail: "For the pan" },
+      { name: "Chili powder", amount: "1.5 tsp", section: "Seasonings", detail: "The primary spice base" },
+      { name: "Smoked paprika", amount: "0.5 tsp", section: "Seasonings", detail: "Adds smoky depth" },
+      { name: "Garlic powder", amount: "0.25 tsp", section: "Seasonings", detail: "Layered garlic flavor" },
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" }
+    ]
+  },
   {
     id: "loaded-sweet-potato-beef-cheddar",
     name: "Loaded Baked Sweet Potatoes with Ground Beef and Cheddar",
@@ -398,6 +475,20 @@ const MEALS = [
   },
 
   // ─── DESSERT (EVENING SNACK) ───
+  {
+    id: "banana-chia-pudding-honey",
+    name: "Banana Chia Pudding with Honey",
+    description: "Creamy chia pudding made with low-fat milk and sliced banana, drizzled with honey.",
+    category: "Dessert",
+    macros: { fats: 8, carbs: 32, fiber: 10, protein: 8 },
+    ingredients: [
+      { name: "Chia seeds", amount: "2 tbsp", section: "Pantry and Grains", detail: "Black or white chia seeds" },
+      { name: "Low-fat milk", amount: "0.75 cup", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
+      { name: "Banana", amount: "1 medium", section: "Produce", detail: "Ripe banana, sliced and laid on top" },
+      { name: "Honey", amount: "1 tsp", section: "Pantry and Grains", detail: "Raw honey, drizzled over the banana" },
+      { name: "Cinnamon", amount: "0.25 tsp", section: "Seasonings", detail: "Sprinkled on top" }
+    ]
+  },
   {
     id: "greek-yogurt-honey",
     name: "Greek Yogurt with Honey",
