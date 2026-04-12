@@ -231,7 +231,8 @@ Category ranges should reflect realistic per-meal amounts for each meal slot, di
     }
     const data = await response.json();
     const text = data.content[0]?.text || '';
-    const result = JSON.parse(text);
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    const result = JSON.parse(cleaned);
     return { result };
   } catch (e) {
     return { error: e.message };
