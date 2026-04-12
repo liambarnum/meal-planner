@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
  * Fetches accurate USDA nutrition data for all meal ingredients.
- * Run: node fetch-nutrition.js
- * Outputs updated STATIC_NUTRITION entries to stdout.
+ *
+ * Usage:
+ *   node fetch-nutrition.js            # fetches data and writes into nutrition.js
+ *   node fetch-nutrition.js --dry-run  # outputs to stdout instead of writing
  */
 
 const API_KEY = '9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h';
@@ -28,46 +30,68 @@ const NUTRIENT_MAP = {
 
 // Search queries tuned for SR Legacy results — maps ingredient name to search term
 const SEARCH_OVERRIDES = {
+  'apple': 'apples raw with skin',
+  'banana': 'bananas raw',
   'plain greek yogurt': 'yogurt greek plain whole milk',
   'rolled oats': 'oats regular quick not fortified dry',
   'low-fat milk': 'milk lowfat fluid 1% milkfat',
   'ground flaxseed': 'seeds flaxseed',
   'chia seeds': 'seeds chia seeds dried',
   'baby spinach': 'spinach raw',
-  'cheddar cheese': 'cheese cheddar',
-  'bone broth': 'soup stock chicken',
-  'lean ground beef': 'beef ground 93% lean raw',
-  'ground turkey': 'turkey ground 93% lean raw',
-  'brown rice': 'rice brown medium-grain cooked',
-  'ground beef': 'beef ground 85% lean raw',
+  'cheddar cheese': 'cheese cheddar natural',
+  'sharp cheddar cheese': 'cheese cheddar natural',
+  'bone broth': 'soup stock chicken home-prepared',
+  'lean ground beef': 'beef ground 93% lean meat 7% fat raw',
+  'ground beef': 'beef ground 85% lean meat 15% fat raw',
+  'ground turkey': 'turkey ground 93% lean 7% fat raw',
+  'brown rice': 'rice brown long-grain cooked',
   'mixed greens': 'lettuce green leaf raw',
-  'black beans': 'beans black canned drained',
+  'black beans': 'beans black mature seeds canned',
   'carrots': 'carrots raw',
   'arugula': 'arugula raw',
   'feta cheese': 'cheese feta',
-  'olive oil': 'oil olive',
-  'rotisserie chicken': 'chicken roasted meat only',
+  'olive oil': 'oil olive salad or cooking',
+  'rotisserie chicken': 'chicken roasting meat only cooked roasted',
   'red lentils': 'lentils raw',
-  'sourdough bread': 'bread sourdough',
-  'canned tuna': 'fish tuna light canned water drained',
+  'sourdough bread': 'bread french or vienna includes sourdough',
+  'canned tuna': 'fish tuna light canned in water drained solids',
   'lemon juice': 'lemon juice raw',
-  'whole grain bread': 'bread whole-wheat',
-  'cottage cheese': 'cheese cottage lowfat 2%',
-  'sharp cheddar cheese': 'cheese cheddar',
-  'sweet potatoes': 'sweet potato raw',
-  'cumin': 'spices cumin seed ground',
-  'bone-in chicken thighs': 'chicken thigh meat skin raw',
+  'whole grain bread': 'bread whole-wheat commercially prepared',
+  'cottage cheese': 'cheese cottage lowfat 2% milkfat',
+  'sweet potatoes': 'sweet potato raw unprepared',
+  'cumin': 'spices cumin seed',
+  'bone-in chicken thighs': 'chicken broilers or fryers thigh meat and skin raw',
   'broccoli': 'broccoli raw',
   'parmesan cheese': 'cheese parmesan grated',
-  'salmon fillet': 'fish salmon atlantic raw',
-  'pinto beans': 'beans pinto canned drained',
-  'sirloin steak': 'beef top sirloin steak raw',
+  'salmon fillet': 'fish salmon atlantic farmed raw',
+  'pinto beans': 'beans pinto canned drained solids',
+  'sirloin steak': 'beef top sirloin steak separable lean and fat raw',
   'green beans': 'beans snap green raw',
-  'ny strip steak': 'beef short loin top loin raw',
-  'baby potatoes': 'potatoes flesh skin raw',
-  'mixed berries': 'berries mixed frozen',
-  'kimchi': 'kimchi',
-  'salsa': 'salsa ready to serve'
+  'ny strip steak': 'beef top loin steak separable lean and fat raw',
+  'baby potatoes': 'potatoes flesh and skin raw',
+  'mixed berries': 'blueberries raw',
+  'eggs': 'egg whole raw fresh',
+  'garlic': 'garlic raw',
+  'honey': 'honey',
+  'kimchi': 'cabbage kimchi',
+  'salsa': 'sauce salsa ready-to-serve',
+  // Seasonings and condiments
+  'butter': 'butter salted',
+  'salt': 'salt table',
+  'cinnamon': 'spices cinnamon ground',
+  'black pepper': 'spices pepper black',
+  'white pepper': 'spices pepper white',
+  'soy sauce': 'soy sauce made from soy and wheat shoyu',
+  'sesame oil': 'oil sesame salad or cooking',
+  'vanilla extract': 'vanilla extract',
+  'chili powder': 'spices chili powder',
+  'garlic powder': 'spices garlic powder',
+  'smoked paprika': 'spices paprika',
+  'dried oregano': 'spices oregano dried',
+  'dried dill': 'spices dill weed dried',
+  'fresh ginger': 'ginger root raw',
+  'fresh rosemary': 'rosemary fresh',
+  'turmeric': 'spices turmeric ground'
 };
 
 async function sleep(ms) {
@@ -129,21 +153,53 @@ function extractPortions(foodPortions) {
     });
 }
 
-async function main() {
-  // Get all unique ingredient names from meals.js
-  const fs = await import('fs');
-  const mealsContent = fs.readFileSync('./meals.js', 'utf8');
+function formatStaticNutrition(results) {
+  const lines = ['const STATIC_NUTRITION = {'];
+  const keys = Object.keys(results).sort();
+  keys.forEach((key, i) => {
+    const entry = results[key];
+    const comma = i < keys.length - 1 ? ',' : '';
+    const nutrients = JSON.stringify(entry.nutrients);
+    const portions = JSON.stringify(entry.portions);
+    lines.push(`  '${key}': {`);
+    lines.push(`    fdcId: ${entry.fdcId},`);
+    lines.push(`    description: ${JSON.stringify(entry.description)},`);
+    lines.push(`    nutrients: ${nutrients},`);
+    lines.push(`    portions: ${portions}`);
+    lines.push(`  }${comma}`);
+  });
+  lines.push('};');
+  return lines.join('\n');
+}
 
-  // Extract ingredient names
-  const nameRegex = /name:\s*"([^"]+)"/g;
+// Direct FDC IDs for ingredients where search returns wrong results
+// Direct FDC IDs for ingredients where search returns wrong results
+const DIRECT_FDC_IDS = {
+  'apple': 171688,                // Apples, raw, with skin
+  'cheddar cheese': 170899,       // Cheese, cheddar, sharp, sliced
+  'sharp cheddar cheese': 170899, // Cheese, cheddar, sharp, sliced
+  'ground beef': 168608,          // Beef, grass-fed, ground, raw
+  'sweet potatoes': 168482,       // Sweet potato, raw, unprepared
+  'canned tuna': 171986,          // Fish, tuna, light, canned in water, drained solids
+};
+
+async function main() {
+  const dryRun = process.argv.includes('--dry-run');
+  const fs = await import('fs');
+  const path = await import('path');
+
+  // Get all unique ingredient names from meals.js
+  const mealsPath = path.resolve('./meals.js');
+  const mealsContent = fs.readFileSync(mealsPath, 'utf8');
+
+  // Extract ingredient names from ingredients arrays only
   const ingredientNames = new Set();
-  // Only get names inside ingredients arrays
   const ingredientBlockRegex = /ingredients:\s*\[([\s\S]*?)\]/g;
   let blockMatch;
   while ((blockMatch = ingredientBlockRegex.exec(mealsContent)) !== null) {
-    let nameMatch;
     const block = blockMatch[1];
     const blockNameRegex = /name:\s*"([^"]+)"/g;
+    let nameMatch;
     while ((nameMatch = blockNameRegex.exec(block)) !== null) {
       ingredientNames.add(nameMatch[1]);
     }
@@ -154,26 +210,34 @@ async function main() {
 
   const results = {};
   let count = 0;
+  let added = 0, failed = 0;
 
   for (const name of sortedNames) {
     count++;
     const key = name.toLowerCase();
     const searchQuery = SEARCH_OVERRIDES[key] || name;
 
-    console.error(`[${count}/${sortedNames.length}] Looking up: "${name}" (query: "${searchQuery}")`);
+    console.error(`[${count}/${sortedNames.length}] Looking up: "${name}"`);
 
     try {
-      const searchResult = await searchFood(searchQuery);
-      if (!searchResult.foods || searchResult.foods.length === 0) {
-        console.error(`  ⚠ No results found, skipping`);
-        continue;
+      let fdcId, fullFood;
+
+      if (DIRECT_FDC_IDS[key]) {
+        fdcId = DIRECT_FDC_IDS[key];
+        console.error(`  (using direct FDC ID: ${fdcId})`);
+        fullFood = await getFood(fdcId);
+        console.error(`  → ${fullFood.description} (fdcId: ${fdcId})`);
+      } else {
+        const searchResult = await searchFood(searchQuery);
+        if (!searchResult.foods || searchResult.foods.length === 0) {
+          console.error(`  ⚠ No results found, skipping`);
+          failed++;
+          continue;
+        }
+        fdcId = searchResult.foods[0].fdcId;
+        console.error(`  → ${searchResult.foods[0].description} (fdcId: ${fdcId})`);
+        fullFood = await getFood(fdcId);
       }
-
-      const topResult = searchResult.foods[0];
-      console.error(`  → ${topResult.description} (fdcId: ${topResult.fdcId})`);
-
-      // Get full details with portions
-      const fullFood = await getFood(topResult.fdcId);
 
       const nutrients = extractNutrients(fullFood.foodNutrients);
       const portions = extractPortions(fullFood.foodPortions);
@@ -189,21 +253,43 @@ async function main() {
       }
 
       results[key] = {
-        description: topResult.description,
+        fdcId,
+        description: fullFood.description,
         nutrients,
-        portions: uniquePortions.slice(0, 4) // Keep top 4 most useful
+        portions: uniquePortions.slice(0, 4)
       };
+      added++;
 
       // Rate limiting: ~2 requests per ingredient (search + detail), stay well under 3600/hr
       await sleep(200);
     } catch (err) {
       console.error(`  ✗ Error: ${err.message}`);
+      failed++;
     }
   }
 
-  // Output as JS
-  console.log('const STATIC_NUTRITION = ' + JSON.stringify(results, null, 2) + ';');
-  console.error(`\nDone! ${Object.keys(results).length}/${sortedNames.length} ingredients fetched successfully.`);
+  console.error(`\nDone! ${added} fetched, ${failed} failed out of ${sortedNames.length} ingredients.`);
+
+  const formattedBlock = formatStaticNutrition(results);
+
+  if (dryRun) {
+    console.log(formattedBlock);
+    return;
+  }
+
+  // Write directly into nutrition.js
+  const nutritionPath = path.resolve('./nutrition.js');
+  let nutritionContent = fs.readFileSync(nutritionPath, 'utf8');
+
+  const blockRegex = /const STATIC_NUTRITION = \{[\s\S]*?\n\};/;
+  if (!blockRegex.test(nutritionContent)) {
+    console.error('ERROR: Could not find STATIC_NUTRITION block in nutrition.js');
+    process.exit(1);
+  }
+
+  nutritionContent = nutritionContent.replace(blockRegex, formattedBlock);
+  fs.writeFileSync(nutritionPath, nutritionContent, 'utf8');
+  console.error(`Wrote updated STATIC_NUTRITION (${Object.keys(results).length} entries) to ${nutritionPath}`);
 }
 
 main().catch(err => { console.error('Fatal:', err); process.exit(1); });

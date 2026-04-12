@@ -37,7 +37,14 @@
       "Bash(buddy-reroll:*)",
       "Bash(grep -r \"fetch-nutrition\\\\|nutrition\" /Users/liam/meal-planner/*.js)",
       "Bash(node scripts/validate-meals.js)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=beef+ground+85+lean+raw&pageSize=5&dataType=SR%20Legacy\")",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\);const j=JSON.parse\\(d\\);j.foods.forEach\\(f=>console.log\\(f.fdcId,f.description\\)\\)\")",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=sweet+potato+unprepared&pageSize=5&dataType=SR%20Legacy\")",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=beef+ground+raw+crumbles&pageSize=5&dataType=SR%20Legacy\")",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=sweet+potatoes+raw&pageSize=10&dataType=SR%20Legacy\")",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=sweetpotato+raw&pageSize=5&dataType=SR%20Legacy\")",
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=Ipomoea+batatas&pageSize=5&dataType=SR%20Legacy\")"
     ]
   },
   "hooks": {
