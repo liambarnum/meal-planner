@@ -198,7 +198,10 @@
 
         <div class="calc-actions">
           <button id="calc-macros-btn" class="btn btn-primary">Calculate with AI</button>
-          <p class="prefs-ai-hint" id="calc-status"></p>
+          <p class="prefs-ai-hint calc-status-msg" id="calc-status" style="display:none">
+            <span id="calc-status-text"></span>
+            <button type="button" class="calc-status-dismiss" id="calc-status-dismiss" aria-label="Dismiss">&times;</button>
+          </p>
         </div>
         <p id="macro-rationale" class="macro-rationale"></p>
       </section>

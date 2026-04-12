@@ -1400,6 +1400,32 @@ body {
   color: var(--gold);
 }
 
+.calc-status-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-left-color: var(--error, #e05555);
+}
+
+.calc-status-msg span {
+  flex: 1;
+}
+
+.calc-status-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.calc-status-dismiss:hover {
+  color: var(--text);
+}
+
 /* ─── BODY STATS FORM ─── */
 .bs-form {
   display: flex;

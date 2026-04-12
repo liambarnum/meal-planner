@@ -1441,16 +1441,30 @@ function renderPreferences() {
 
     // AI Calculate button
     const calcBtn = document.getElementById('calc-macros-btn');
+    const statusEl = document.getElementById('calc-status');
+    const statusText = document.getElementById('calc-status-text');
+    const statusDismiss = document.getElementById('calc-status-dismiss');
+
+    function showCalcError(msg) {
+      if (!statusEl) return;
+      statusText.textContent = '✗ ' + msg;
+      statusEl.style.display = '';
+    }
+    function hideCalcStatus() {
+      if (statusEl) statusEl.style.display = 'none';
+    }
+
+    if (statusDismiss) statusDismiss.addEventListener('click', hideCalcStatus);
+
     if (calcBtn) calcBtn.addEventListener('click', async () => {
+      hideCalcStatus();
       calcBtn.disabled = true;
       calcBtn.textContent = 'Calculating…';
-      const rationaleEl = document.getElementById('macro-rationale');
-      const statusEl = document.getElementById('calc-status');
       const { result, error } = await calculateMacrosWithAI();
       calcBtn.disabled = false;
       calcBtn.textContent = 'Calculate with AI';
       if (error) {
-        if (statusEl) statusEl.textContent = '✗ ' + error;
+        showCalcError(error);
         return;
       }
       state.calorieTarget = result.calorieTarget;
@@ -1460,11 +1474,9 @@ function renderPreferences() {
       saveState();
       syncTargetStatsUI();
       renderPlanner();
-      if (statusEl) statusEl.textContent = '';
     });
   }
 
-  syncBodyStats();
   syncTargetStatsUI();
 
   // Export / Import
