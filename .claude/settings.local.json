@@ -44,7 +44,9 @@
       "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=beef+ground+raw+crumbles&pageSize=5&dataType=SR%20Legacy\")",
       "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=sweet+potatoes+raw&pageSize=10&dataType=SR%20Legacy\")",
       "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=sweetpotato+raw&pageSize=5&dataType=SR%20Legacy\")",
-      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=Ipomoea+batatas&pageSize=5&dataType=SR%20Legacy\")"
+      "Bash(curl -s \"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=9hOC3zECxuVSP4ZTbxIty0k0gi9PsuUXdEgUR26h&query=Ipomoea+batatas&pageSize=5&dataType=SR%20Legacy\")",
+      "Bash(curl -s \"http://localhost:8000/app.js?v=11\")",
+      "Bash(curl -s \"http://localhost:8000/styles.css?v=11\")"
     ]
   },
   "hooks": {

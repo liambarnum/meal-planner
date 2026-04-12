@@ -213,6 +213,9 @@ Apply these rules:
 - **Never use "trash" tier** or allergens.
 - **"try" tier** is a gentle suggestion — use occasionally.
 - Respect `dietGoals` as free-text guidance (e.g., "high protein", "low carb").
+- If `macroTargets` is present, use those values (`{ protein, carbs, fats, fiber }` in g/day) to calibrate meal macros. Scale per-meal targets by slot: breakfast ~25%, lunch ~30%, dinner ~35%, snack ~10%, dessert ~5% of daily totals.
+- If `calorieTarget` is present, ensure meals roughly fit within it across a typical day.
+- If `categoryRanges` is present (e.g. `{ "Breakfast": { "protein": [20, 55], ... } }`), use those as your per-meal macro guardrails instead of the hardcoded table in this document.
 
 If `preferences.json` doesn't exist, proceed with sensible defaults and note it in your return message.
 

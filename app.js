@@ -1,7 +1,8 @@
 /* ─── STATE ─── */
 const SLOTS = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
 const SECTIONS = ['Produce', 'Dairy', 'Meat and Seafood', 'Pantry and Grains', 'Canned and Jarred', 'Refrigerated', 'Frozen', 'Seasonings'];
-const MACRO_TARGETS = { fats: 65, carbs: 300, fiber: 30, protein: 120 }; // grams per day
+const MACRO_TARGETS_DEFAULT = { fats: 65, carbs: 300, fiber: 30, protein: 120 }; // grams per day fallback
+function getMacroTargets() { return state.macroTargets || MACRO_TARGETS_DEFAULT; }
 const DAY_ABBRS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -18,7 +19,13 @@ let state = {
   allergens: [],             // e.g. ['Peanuts', 'Shellfish']
   dietGoals: '',             // free-text diet description
   ingredientTiers: {},       // { "banana": "S", "eggs": "A", ... }
-  customIngredients: []      // user-added ingredient names not yet tied to any meal
+  customIngredients: [],     // user-added ingredient names not yet tied to any meal
+  bodyStats: { sex: 'male', age: null, heightFt: null, heightIn: null, weightLbs: null, useMetric: false, heightCm: null, weightKg: null, activity: 'moderate' },
+  macroTargets: null,        // { protein, carbs, fats, fiber } — null uses MACRO_TARGETS_DEFAULT
+  calorieTarget: null,       // number or null
+  macroProportion: { protein: 'M', carbs: 'M', fats: 'M' },
+  categoryRanges: null,      // { Breakfast: { protein:[lo,hi], ... }, ... } or null
+  macroRationale: ''         // brief string from AI explaining the targets
 };
 
 /* ─── DATE HELPERS ─── */
@@ -99,6 +106,12 @@ function loadState() {
       state.ingredientTiers = parsed.ingredientTiers || {};
       state.customIngredients = parsed.customIngredients || [];
       if (parsed.customMeals) state._savedCustomMeals = parsed.customMeals;
+      if (parsed.bodyStats) state.bodyStats = { ...state.bodyStats, ...parsed.bodyStats };
+      state.macroTargets = parsed.macroTargets || null;
+      state.calorieTarget = parsed.calorieTarget || null;
+      if (parsed.macroProportion) state.macroProportion = parsed.macroProportion;
+      state.categoryRanges = parsed.categoryRanges || null;
+      state.macroRationale = parsed.macroRationale || '';
     }
   } catch (e) { /* start fresh */ }
 }
@@ -136,12 +149,93 @@ function saveState() {
     allergens: state.allergens,
     dietGoals: state.dietGoals,
     ingredientTiers: state.ingredientTiers,
-    customIngredients: state.customIngredients
+    customIngredients: state.customIngredients,
+    bodyStats: state.bodyStats,
+    macroTargets: state.macroTargets,
+    calorieTarget: state.calorieTarget,
+    macroProportion: state.macroProportion,
+    categoryRanges: state.categoryRanges,
+    macroRationale: state.macroRationale
   }));
 }
 
 function getMeal(id) {
   return state.masterMeals.find(m => m.id === id);
+}
+
+/* ─── TDEE CALCULATION ─── */
+const ACTIVITY_MULTIPLIERS = {
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  active: 1.725,
+  extra: 1.9
+};
+
+function calculateTDEE(stats) {
+  let weightKg = stats.useMetric ? stats.weightKg : (stats.weightLbs / 2.2046);
+  let heightCm = stats.useMetric ? stats.heightCm : ((stats.heightFt || 0) * 30.48 + (stats.heightIn || 0) * 2.54);
+  const age = stats.age;
+  if (!weightKg || !heightCm || !age) return null;
+  const bmr = stats.sex === 'male'
+    ? 10 * weightKg + 6.25 * heightCm - 5 * age + 5
+    : 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
+  return Math.round(bmr * (ACTIVITY_MULTIPLIERS[stats.activity] || 1.55));
+}
+
+async function calculateMacrosWithAI() {
+  if (!state.apiKey) return { error: 'Please enter your Anthropic API key in the AI Assistant panel first.' };
+  const tdee = calculateTDEE(state.bodyStats);
+  const prompt = `You are a nutrition expert. Given the following information, return ONLY a valid JSON object — no explanation, no markdown fences, just the raw JSON.
+
+Input:
+- TDEE: ${tdee ? tdee + ' cal/day' : 'unknown (user did not provide body stats)'}
+- User goals and dietary description: "${state.dietGoals || 'Not specified'}"
+- Macro proportion preferences — Protein: ${state.macroProportion.protein}, Carbs: ${state.macroProportion.carbs}, Fats: ${state.macroProportion.fats}
+  (H = high proportion, M = medium, L = low)
+
+Return this exact JSON structure:
+{
+  "calorieTarget": <integer>,
+  "rationale": "<one sentence explaining the calorie target relative to TDEE and goal>",
+  "macros": { "protein": <g>, "carbs": <g>, "fats": <g>, "fiber": <g> },
+  "categoryRanges": {
+    "Breakfast": { "protein": [<lo>, <hi>], "carbs": [<lo>, <hi>], "fats": [<lo>, <hi>] },
+    "Lunch": { "protein": [<lo>, <hi>], "carbs": [<lo>, <hi>], "fats": [<lo>, <hi>] },
+    "Dinner": { "protein": [<lo>, <hi>], "carbs": [<lo>, <hi>], "fats": [<lo>, <hi>] },
+    "Snack": { "protein": [<lo>, <hi>], "carbs": [<lo>, <hi>], "fats": [<lo>, <hi>] },
+    "Dessert": { "protein": [<lo>, <hi>], "carbs": [<lo>, <hi>], "fats": [<lo>, <hi>] }
+  }
+}
+
+Category ranges should reflect realistic per-meal amounts for each meal slot, distributed across the daily calorie target. Ensure macros sum reasonably to the calorie target (protein×4 + carbs×4 + fats×9 ≈ calorieTarget).`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': state.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${response.status}`);
+    }
+    const data = await response.json();
+    const text = data.content[0]?.text || '';
+    const result = JSON.parse(text);
+    return { result };
+  } catch (e) {
+    return { error: e.message };
+  }
 }
 
 /* ─── SERVICE WORKER ─── */
@@ -381,11 +475,12 @@ function renderDayView(container, dateISO) {
   });
 
   const macroBars = ['fats', 'carbs', 'fiber', 'protein'].map(key => {
-    const pct = Math.min(100, Math.round((totals[key] / MACRO_TARGETS[key]) * 100));
+    const targets = getMacroTargets();
+    const pct = Math.min(100, Math.round((totals[key] / targets[key]) * 100));
     const label = key.charAt(0).toUpperCase() + key.slice(1);
     return `
       <div class="macro-bar-container">
-        <div class="macro-bar-label" data-macro="${key}">${label}: ${totals[key]}g / ${MACRO_TARGETS[key]}g (${pct}%)</div>
+        <div class="macro-bar-label" data-macro="${key}">${label}: ${totals[key]}g / ${targets[key]}g (${pct}%)</div>
         <div class="macro-bar-track">
           <div class="macro-bar-fill macro-bar-${key}" style="width: ${pct}%"></div>
         </div>
@@ -852,7 +947,7 @@ function buildSystemPrompt() {
 DIETARY GOALS:
 - Promote gut health through high-fiber, diverse plant-based foods
 - Support weight loss with balanced macros and portion control
-- Target ${MACRO_TARGETS.fiber}g of fiber per day
+- Target ${getMacroTargets().fiber}g of fiber per day
 - Encourage fermented foods, prebiotics, and polyphenol-rich ingredients
 
 DATE RANGE: ${formatDateShort(state.dateRangeStart)} to ${formatDateShort(addDays(state.dateRangeStart, state.dateRangeLength - 1))}
@@ -1128,6 +1223,105 @@ function getSeasoningNames() {
   return names;
 }
 
+function syncBodyStats() {
+  const s = state.bodyStats;
+  const useMetric = document.getElementById('bs-unit-toggle')?.checked;
+  if (useMetric !== undefined) s.useMetric = useMetric;
+
+  const maleSel = document.getElementById('bs-sex-male');
+  const femaleSel = document.getElementById('bs-sex-female');
+  if (maleSel) s.sex = maleSel.checked ? 'male' : 'female';
+
+  s.age = parseInt(document.getElementById('bs-age')?.value) || null;
+  s.activity = document.getElementById('bs-activity')?.value || 'moderate';
+
+  if (s.useMetric) {
+    s.heightCm = parseFloat(document.getElementById('bs-height-cm')?.value) || null;
+    s.weightKg = parseFloat(document.getElementById('bs-weight-kg')?.value) || null;
+    ['bs-imperial', 'bs-imperial-w'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    ['bs-metric', 'bs-metric-w'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+  } else {
+    s.heightFt = parseInt(document.getElementById('bs-height-ft')?.value) || null;
+    s.heightIn = parseInt(document.getElementById('bs-height-in')?.value) || null;
+    s.weightLbs = parseFloat(document.getElementById('bs-weight-lbs')?.value) || null;
+    ['bs-imperial', 'bs-imperial-w'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+    ['bs-metric', 'bs-metric-w'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  }
+
+  saveState();
+
+  const tdee = calculateTDEE(s);
+  const tdeeEl = document.getElementById('tdee-display');
+  if (tdeeEl) tdeeEl.textContent = tdee ? tdee.toLocaleString() + ' cal/day' : '—';
+}
+
+function syncTargetStatsUI() {
+  const targets = getMacroTargets();
+  const calEl = document.getElementById('mt-calories');
+  if (calEl) calEl.value = state.calorieTarget || '';
+
+  ['protein', 'carbs', 'fats', 'fiber'].forEach(key => {
+    const el = document.getElementById(`mt-${key}`);
+    if (el) el.value = targets[key] || '';
+  });
+
+  const tdee = calculateTDEE(state.bodyStats);
+  const summaryEl = document.getElementById('target-summary');
+  if (summaryEl) {
+    const cal = state.calorieTarget;
+    if (cal && tdee) {
+      const diff = cal - tdee;
+      const dir = diff < 0 ? `${Math.abs(diff)} cal deficit` : diff > 0 ? `${diff} cal surplus` : 'maintenance';
+      summaryEl.textContent = `TDEE: ${tdee.toLocaleString()} cal — Target: ${cal.toLocaleString()} cal (${dir})`;
+    } else if (cal) {
+      summaryEl.textContent = `Target: ${cal.toLocaleString()} cal/day`;
+    } else {
+      summaryEl.textContent = '';
+    }
+  }
+
+  const rationaleEl = document.getElementById('macro-rationale');
+  if (rationaleEl) rationaleEl.textContent = state.macroRationale || '';
+
+  // Restore proportion radio selections
+  ['protein', 'carbs', 'fats'].forEach(macro => {
+    const level = state.macroProportion[macro] || 'M';
+    const el = document.getElementById(`mp-${macro}-${level}`);
+    if (el) el.checked = true;
+  });
+
+  // Restore body stats inputs
+  const s = state.bodyStats;
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+  const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+  setCheck('bs-sex-male', s.sex === 'male');
+  setCheck('bs-sex-female', s.sex === 'female');
+  setVal('bs-age', s.age);
+  setVal('bs-height-ft', s.heightFt);
+  setVal('bs-height-in', s.heightIn);
+  setVal('bs-weight-lbs', s.weightLbs);
+  setVal('bs-height-cm', s.heightCm);
+  setVal('bs-weight-kg', s.weightKg);
+  if (document.getElementById('bs-activity')) document.getElementById('bs-activity').value = s.activity;
+  setCheck('bs-unit-toggle', s.useMetric);
+
+  // Show/hide imperial vs metric fields
+  ['bs-imperial', 'bs-imperial-w'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = s.useMetric ? 'none' : '';
+  });
+  ['bs-metric', 'bs-metric-w'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = s.useMetric ? '' : 'none';
+  });
+
+  const tdeeEl = document.getElementById('tdee-display');
+  if (tdeeEl) {
+    const t = calculateTDEE(s);
+    tdeeEl.textContent = t ? t.toLocaleString() + ' cal/day' : '—';
+  }
+}
+
 function renderPreferences() {
   // Allergens checklist
   const checklist = document.getElementById('allergen-checklist');
@@ -1194,7 +1388,71 @@ function renderPreferences() {
       state.dietGoals = goalsEl.value;
       saveState();
     });
+
+    // Body stats inputs
+    const statsFields = ['bs-sex-male', 'bs-sex-female', 'bs-age', 'bs-height-ft', 'bs-height-in',
+                         'bs-weight-lbs', 'bs-height-cm', 'bs-weight-kg', 'bs-activity', 'bs-unit-toggle'];
+    statsFields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', syncBodyStats);
+      el.addEventListener('input', syncBodyStats);
+    });
+
+    // H/M/L proportion radios
+    ['protein', 'carbs', 'fats'].forEach(macro => {
+      ['H', 'M', 'L'].forEach(level => {
+        const el = document.getElementById(`mp-${macro}-${level}`);
+        if (el) el.addEventListener('change', () => {
+          state.macroProportion[macro] = level;
+          saveState();
+        });
+      });
+    });
+
+    // Manual macro target edits
+    ['protein', 'carbs', 'fats', 'fiber'].forEach(key => {
+      const el = document.getElementById(`mt-${key}`);
+      if (el) el.addEventListener('input', () => {
+        if (!state.macroTargets) state.macroTargets = { ...getMacroTargets() };
+        state.macroTargets[key] = parseInt(el.value) || 0;
+        saveState();
+        renderPlanner();
+      });
+    });
+    const calEl = document.getElementById('mt-calories');
+    if (calEl) calEl.addEventListener('input', () => {
+      state.calorieTarget = parseInt(calEl.value) || null;
+      saveState();
+    });
+
+    // AI Calculate button
+    const calcBtn = document.getElementById('calc-macros-btn');
+    if (calcBtn) calcBtn.addEventListener('click', async () => {
+      calcBtn.disabled = true;
+      calcBtn.textContent = 'Calculating…';
+      const rationaleEl = document.getElementById('macro-rationale');
+      const statusEl = document.getElementById('calc-status');
+      const { result, error } = await calculateMacrosWithAI();
+      calcBtn.disabled = false;
+      calcBtn.textContent = 'Calculate with AI';
+      if (error) {
+        if (statusEl) statusEl.textContent = '✗ ' + error;
+        return;
+      }
+      state.calorieTarget = result.calorieTarget;
+      state.macroTargets = result.macros;
+      state.categoryRanges = result.categoryRanges;
+      state.macroRationale = result.rationale || '';
+      saveState();
+      syncTargetStatsUI();
+      renderPlanner();
+      if (statusEl) statusEl.textContent = '';
+    });
   }
+
+  syncBodyStats();
+  syncTargetStatsUI();
 
   // Export / Import
   if (!prefsInitialized) {
@@ -1202,7 +1460,10 @@ function renderPreferences() {
       const prefs = {
         ingredientTiers: state.ingredientTiers,
         allergens: state.allergens,
-        dietGoals: state.dietGoals
+        dietGoals: state.dietGoals,
+        ...(state.macroTargets && { macroTargets: state.macroTargets }),
+        ...(state.calorieTarget && { calorieTarget: state.calorieTarget }),
+        ...(state.categoryRanges && { categoryRanges: state.categoryRanges })
       };
       const blob = new Blob([JSON.stringify(prefs, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);

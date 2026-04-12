@@ -1396,6 +1396,160 @@ body {
   color: var(--gold);
 }
 
+/* ─── BODY STATS FORM ─── */
+.bs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.bs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bs-label {
+  min-width: 70px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.bs-radio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.bs-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 0.85rem;
+}
+.bs-input-sm { width: 64px; }
+.bs-input:focus { outline: none; border-color: var(--gold); }
+.bs-unit {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.bs-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 0.85rem;
+  flex: 1;
+  max-width: 320px;
+}
+.bs-select:focus { outline: none; border-color: var(--gold); }
+.bs-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.bs-unit-row { margin-top: 4px; }
+.tdee-display-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 10px 14px;
+  background: var(--gold-glow);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--gold);
+}
+.tdee-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.tdee-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--gold);
+  font-family: var(--font-heading);
+}
+
+/* ─── TARGET DIET STATS ─── */
+.target-summary {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  min-height: 1em;
+}
+.macro-proportion-grid {
+  display: grid;
+  grid-template-columns: auto repeat(3, 60px);
+  gap: 6px 4px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.mp-header {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.mp-label {
+  font-size: 0.85rem;
+  color: var(--text);
+  padding-right: 8px;
+}
+.mp-radio {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+}
+.macro-targets-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.mt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mt-label {
+  min-width: 70px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.mt-input {
+  width: 90px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.mt-input:focus { outline: none; border-color: var(--gold); }
+.mt-unit {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.calc-actions {
+  margin-top: 4px;
+}
+.macro-rationale {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 8px;
+  min-height: 1em;
+  line-height: 1.5;
+}
+
 .meal-gen-actions {
   display: flex;
   gap: 10px;

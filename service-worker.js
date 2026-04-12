@@ -1,11 +1,11 @@
-const CACHE_NAME = 'meal-planner-v14';
+const CACHE_NAME = 'meal-planner-v15';
 const ASSETS = [
   './',
   './index.html',
-  './app.js?v=10',
+  './app.js?v=11',
   './meals.js?v=10',
   './nutrition.js?v=10',
-  './styles.css?v=10',
+  './styles.css?v=11',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
