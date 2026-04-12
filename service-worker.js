@@ -28,8 +28,14 @@ self.addEventListener('activate', event => {
   );
 });
 
+const isLocalhost = self.location.hostname === 'localhost' ||
+                    self.location.hostname === '127.0.0.1';
+
 // Fetch — stale-while-revalidate for local assets
 self.addEventListener('fetch', event => {
+  // On localhost, bypass service worker so file changes are always visible
+  if (isLocalhost) return;
+
   const url = new URL(event.request.url);
 
   // Never cache API calls
