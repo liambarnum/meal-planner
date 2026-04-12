@@ -289,15 +289,20 @@ function renderIngredientsList(meal) {
       </button>
     </div>
     <div class="ingredients-list ingredients-hidden">
-      ${(meal.ingredients || []).map(ing => `
+      ${(meal.ingredients || []).map(ing => {
+        const nutr = computeIngredientNutrition(ing);
+        const badge = nutr
+          ? `<span class="ingredient-nutrition-badge">${nutr.calories} cal &middot; ${nutr.protein}g P</span>`
+          : '';
+        return `
         <div class="ingredient-row">
           <span class="ingredient-amount">${esc(ing.amount)}</span>
           <span class="ingredient-info">
-            <span class="ingredient-name">${esc(ing.name)}</span>
+            <span class="ingredient-name">${esc(ing.name)}${badge}</span>
             ${ing.detail ? `<span class="ingredient-detail">${esc(ing.detail)}</span>` : ''}
           </span>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>
   `;
 }
@@ -1303,9 +1308,13 @@ function placePickedChip(zone) {
 function createIngredientChip(name) {
   const chip = document.createElement('div');
   chip.className = 'tier-chip';
-  chip.textContent = name;
   chip.draggable = true;
   chip.dataset.ingredient = name;
+  if (!hasNutritionData(name)) {
+    chip.innerHTML = '<span class="chip-no-nutrition" title="No nutritional info available">&#9888;</span> ' + esc(name);
+  } else {
+    chip.textContent = name;
+  }
 
   // Click to pick up
   chip.addEventListener('click', e => {

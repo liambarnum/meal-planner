@@ -950,6 +950,25 @@ body {
   font-size: 0.73rem;
   font-style: italic;
 }
+.ingredient-nutrition-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: var(--gold-dim);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--gold);
+  white-space: nowrap;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+.chip-no-nutrition {
+  color: #e6a817;
+  font-size: 0.85em;
+  cursor: help;
+}
 .ingredients-hidden {
   display: none !important;
 }

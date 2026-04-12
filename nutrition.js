@@ -354,6 +354,27 @@ function convertToGrams(parsedAmount, portions) {
   return { grams: quantity * 100 };
 }
 
+// ─── INGREDIENT NUTRITION HELPERS ───
+
+function hasNutritionData(ingredientName) {
+  return !!STATIC_NUTRITION[ingredientName.toLowerCase()];
+}
+
+function computeIngredientNutrition(ing) {
+  const key = ing.name.toLowerCase();
+  const staticEntry = STATIC_NUTRITION[key];
+  if (!staticEntry) return null;
+  const parsed = parseAmount(ing.amount);
+  const { grams } = convertToGrams(parsed, staticEntry.portions);
+  const scale = grams / 100;
+  return {
+    calories: Math.round(staticEntry.nutrients.calories * scale),
+    protein: Math.round(staticEntry.nutrients.protein * scale),
+    fat: Math.round(staticEntry.nutrients.totalFat * scale),
+    carbs: Math.round(staticEntry.nutrients.totalCarbs * scale)
+  };
+}
+
 // ─── MEAL NUTRITION COMPUTATION ───
 
 function computeMealNutrition(meal) {
