@@ -35,7 +35,9 @@ Your outputs go into `meals.js` (a JS file read by the browser app) or `generate
 ```
 
 **Valid categories:** `Breakfast`, `Lunch`, `Snack`, `Dinner`, `Dessert`
-**Valid ingredient sections:** `Produce`, `Dairy`, `Meat and Seafood`, `Pantry and Grains`, `Canned and Jarred`, `Refrigerated`, `Frozen`
+**Valid ingredient sections:** `Produce`, `Dairy`, `Meat and Seafood`, `Pantry and Grains`, `Canned and Jarred`, `Refrigerated`, `Frozen`, `Seasonings`
+
+Use `Seasonings` for salt, pepper, dried spices, and dried herbs (cumin, paprika, chili powder, turmeric, oregano, thyme, garlic powder, onion powder, cinnamon, vanilla extract, etc.). These ingredients display no nutrition badge in the UI because their caloric/macro contribution is negligible. Do NOT use `Seasonings` for ingredients with meaningful caloric contribution even if used sparingly — oils, honey, soy sauce, and similar condiments belong in `Pantry and Grains`.
 
 Calories are NOT stored — only fats, carbs, fiber, protein.
 
@@ -141,9 +143,9 @@ Three fully-formed meals that model correct units, portions, and structure. Use 
     { name: "Feta cheese", amount: "1 oz", section: "Dairy", detail: "Crumbled" },
     { name: "Olive oil", amount: "1 tbsp", section: "Pantry and Grains", detail: "Extra virgin" },
     { name: "Lemon juice", amount: "1 tbsp", section: "Produce", detail: "Fresh-squeezed" },
-    { name: "Dried oregano", amount: "0.5 tsp", section: "Pantry and Grains", detail: "For marinade" },
+    { name: "Dried oregano", amount: "0.5 tsp", section: "Seasonings", detail: "For marinade" },
     { name: "Garlic", amount: "2 cloves", section: "Produce", detail: "Minced" },
-    { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" }
+    { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" }
   ]
 }
 ```
@@ -163,8 +165,8 @@ Three fully-formed meals that model correct units, portions, and structure. Use 
     { name: "Whole grain bread", amount: "2 slices", section: "Pantry and Grains", detail: "Dave's Killer Bread or similar" },
     { name: "Butter", amount: "1 tsp", section: "Dairy", detail: "For toast" },
     { name: "Olive oil", amount: "1 tsp", section: "Pantry and Grains", detail: "For the pan" },
-    { name: "Salt", amount: "0.25 tsp", section: "Pantry and Grains", detail: "To taste" },
-    { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" }
+    { name: "Salt", amount: "0.25 tsp", section: "Seasonings", detail: "To taste" },
+    { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" }
   ]
 }
 ```
@@ -185,8 +187,8 @@ Three fully-formed meals that model correct units, portions, and structure. Use 
     { name: "Olive oil", amount: "1 tbsp", section: "Pantry and Grains", detail: "Extra virgin" },
     { name: "Fresh rosemary", amount: "1 tsp", section: "Produce", detail: "Finely chopped" },
     { name: "Parmesan cheese", amount: "0.5 oz", section: "Dairy", detail: "Finely grated, for garnish" },
-    { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher" },
-    { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" }
+    { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher" },
+    { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" }
   ]
 }
 ```

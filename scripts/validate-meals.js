@@ -17,7 +17,7 @@ const vm = require('vm');
 const VALID_CATEGORIES = new Set(['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert']);
 const VALID_SECTIONS = new Set([
   'Produce', 'Dairy', 'Meat and Seafood', 'Pantry and Grains',
-  'Canned and Jarred', 'Refrigerated', 'Frozen'
+  'Canned and Jarred', 'Refrigerated', 'Frozen', 'Seasonings'
 ]);
 
 const VOLUME_UNITS = new Set([

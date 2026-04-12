@@ -52,6 +52,7 @@ These map to grocery list tabs:
 - `Canned and Jarred`
 - `Refrigerated`
 - `Frozen`
+- `Seasonings` — use for salt, pepper, spices, dried herbs, and other seasonings used in negligible amounts. Ingredients in this section display no NF badge in the UI.
 
 ### To add a meal
 

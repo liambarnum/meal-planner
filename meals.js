@@ -41,7 +41,7 @@ const MEALS = [
       { name: "Plain Greek yogurt", amount: "1 cup", section: "Dairy", detail: "Non-fat vanilla Greek yogurt (e.g. Fage 0%, Chobani)" },
       { name: "Banana", amount: "2 medium", section: "Produce", detail: "Medium bananas" },
       { name: "Honey", amount: "1 tbsp", section: "Pantry and Grains", detail: "Raw Honey" },
-      { name: "Cinnamon", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Ground cinnamon" }
+      { name: "Cinnamon", amount: "0.25 tsp", section: "Seasonings", detail: "Ground cinnamon" }
     ]
   },
   {
@@ -54,8 +54,8 @@ const MEALS = [
       { name: "Rolled oats", amount: "1.5 cups", section: "Pantry and Grains", detail: "Steel cut oats (not instant)" },
       { name: "Low-fat milk", amount: "1.5 cups", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
       { name: "Blueberries", amount: "1 cup", section: "Produce", detail: "Fresh or frozen wild blueberries" },
-      { name: "Cinnamon", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Ground cinnamon" },
-      { name: "Vanilla extract", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Pure vanilla extract" }
+      { name: "Cinnamon", amount: "0.5 tsp", section: "Seasonings", detail: "Ground cinnamon" },
+      { name: "Vanilla extract", amount: "0.5 tsp", section: "Seasonings", detail: "Pure vanilla extract" }
     ]
   },
   {
@@ -69,8 +69,8 @@ const MEALS = [
       { name: "Low-fat milk", amount: "1.5 cups", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
       { name: "Apple", amount: "1 medium", section: "Produce", detail: "Honeycrisp or Fuji apple, diced with skin on" },
       { name: "Ground flaxseed", amount: "1.5 tbsp", section: "Pantry and Grains", detail: "Pre-ground golden or brown flaxseed meal (e.g. Bob's Red Mill)" },
-      { name: "Cinnamon", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Ground cinnamon" },
-      { name: "Salt", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Pinch of salt to bring out sweetness" }
+      { name: "Cinnamon", amount: "0.5 tsp", section: "Seasonings", detail: "Ground cinnamon" },
+      { name: "Salt", amount: "0.25 tsp", section: "Seasonings", detail: "Pinch of salt to bring out sweetness" }
     ]
   },
   {
@@ -85,7 +85,7 @@ const MEALS = [
       { name: "Strawberries", amount: "0.5 cup", section: "Produce", detail: "Fresh strawberries, hulled and sliced" },
       { name: "Raspberries", amount: "0.5 cup", section: "Produce", detail: "Fresh red raspberries" },
       { name: "Blueberries", amount: "0.5 cup", section: "Produce", detail: "Fresh or frozen wild blueberries" },
-      { name: "Vanilla extract", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Pure vanilla extract" }
+      { name: "Vanilla extract", amount: "0.5 tsp", section: "Seasonings", detail: "Pure vanilla extract" }
     ]
   },
   {
@@ -111,8 +111,8 @@ const MEALS = [
       { name: "Baby spinach", amount: "2 cups", section: "Produce", detail: "Pre-washed baby spinach leaves" },
       { name: "Cheddar cheese", amount: "1 oz", section: "Dairy", detail: "Sharp cheddar, shredded (e.g. Tillamook)" },
       { name: "Butter", amount: "1 tsp", section: "Dairy", detail: "For the pan" },
-      { name: "Salt", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" }
+      { name: "Salt", amount: "0.25 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" }
     ]
   },
 
@@ -131,8 +131,8 @@ const MEALS = [
       { name: "Fresh ginger", amount: "0.5 tsp", section: "Produce", detail: "Freshly grated" },
       { name: "Soy sauce", amount: "1 tsp", section: "Pantry and Grains", detail: "Low-sodium soy sauce" },
       { name: "Sesame oil", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Toasted sesame oil, drizzled at the end" },
-      { name: "Salt", amount: "0.25 tsp", section: "Pantry and Grains", detail: "To taste" },
-      { name: "White pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Ground white pepper" }
+      { name: "Salt", amount: "0.25 tsp", section: "Seasonings", detail: "To taste" },
+      { name: "White pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Ground white pepper" }
     ]
   },
   {
@@ -148,7 +148,7 @@ const MEALS = [
       { name: "Garlic", amount: "2 cloves", section: "Produce", detail: "Fresh garlic cloves, minced" },
       { name: "Soy sauce", amount: "1 tbsp", section: "Pantry and Grains", detail: "Low-sodium soy sauce" },
       { name: "Sesame oil", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Toasted sesame oil" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" }
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" }
     ]
   },
   {
@@ -163,10 +163,10 @@ const MEALS = [
       { name: "Black beans", amount: "0.75 cup", section: "Canned and Jarred", detail: "Canned black beans, drained and rinsed (e.g. Goya, Bush's)" },
       { name: "Salsa", amount: "0.5 cup", section: "Canned and Jarred", detail: "Medium chunky salsa (e.g. Pace, Frontera)" },
       { name: "Cheddar cheese", amount: "1 oz", section: "Dairy", detail: "Sharp cheddar, shredded (e.g. Tillamook)" },
-      { name: "Chili powder", amount: "1 tsp", section: "Pantry and Grains", detail: "For seasoning the beef" },
-      { name: "Cumin", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Ground cumin" },
-      { name: "Salt", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" }
+      { name: "Chili powder", amount: "1 tsp", section: "Seasonings", detail: "For seasoning the beef" },
+      { name: "Cumin", amount: "0.5 tsp", section: "Seasonings", detail: "Ground cumin" },
+      { name: "Salt", amount: "0.25 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" }
     ]
   },
   {
@@ -181,9 +181,9 @@ const MEALS = [
       { name: "Arugula", amount: "2 cups", section: "Produce", detail: "Baby arugula, peppery and fresh" },
       { name: "Feta cheese", amount: "1.5 oz", section: "Dairy", detail: "Crumbled traditional feta (sheep's milk preferred)" },
       { name: "Olive oil", amount: "1 tbsp", section: "Pantry and Grains", detail: "Extra virgin olive oil" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" },
-      { name: "Dried oregano", amount: "0.5 tsp", section: "Pantry and Grains", detail: "For the roasted carrots" }
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Dried oregano", amount: "0.5 tsp", section: "Seasonings", detail: "For the roasted carrots" }
     ]
   },
   {
@@ -198,10 +198,10 @@ const MEALS = [
       { name: "Red lentils", amount: "0.75 cup dry", section: "Pantry and Grains", detail: "Split red lentils — cook in about 15 min, no soaking needed" },
       { name: "Garlic", amount: "3 cloves", section: "Produce", detail: "Fresh garlic cloves, minced" },
       { name: "Sourdough bread", amount: "2 slices", section: "Pantry and Grains", detail: "Thick-cut artisan sourdough bread" },
-      { name: "Cumin", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Ground cumin" },
-      { name: "Turmeric", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Ground turmeric" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" }
+      { name: "Cumin", amount: "0.5 tsp", section: "Seasonings", detail: "Ground cumin" },
+      { name: "Turmeric", amount: "0.25 tsp", section: "Seasonings", detail: "Ground turmeric" },
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" }
     ]
   },
   {
@@ -217,9 +217,9 @@ const MEALS = [
       { name: "Mixed greens", amount: "2 cups", section: "Produce", detail: "Spring mix or mesclun blend" },
       { name: "Cheddar cheese", amount: "1 oz", section: "Dairy", detail: "Sharp cheddar, shredded (e.g. Tillamook)" },
       { name: "Whole grain bread", amount: "2 slices", section: "Pantry and Grains", detail: "100% whole wheat bread (e.g. Dave's Killer Bread)" },
-      { name: "Salt", amount: "0.25 tsp", section: "Pantry and Grains", detail: "To taste" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" },
-      { name: "Dried dill", amount: "0.25 tsp", section: "Pantry and Grains", detail: "For the tuna mix" }
+      { name: "Salt", amount: "0.25 tsp", section: "Seasonings", detail: "To taste" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Dried dill", amount: "0.25 tsp", section: "Seasonings", detail: "For the tuna mix" }
     ]
   },
 
@@ -256,7 +256,7 @@ const MEALS = [
       { name: "Chia seeds", amount: "3 tbsp", section: "Pantry and Grains", detail: "Black or white chia seeds — both work equally" },
       { name: "Low-fat milk", amount: "1 cup", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
       { name: "Raspberries", amount: "1 cup", section: "Produce", detail: "Fresh red raspberries" },
-      { name: "Vanilla extract", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Pure vanilla extract" }
+      { name: "Vanilla extract", amount: "0.5 tsp", section: "Seasonings", detail: "Pure vanilla extract" }
     ]
   },
   {
@@ -306,10 +306,10 @@ const MEALS = [
       { name: "Ground beef", amount: "6 oz", section: "Meat and Seafood", detail: "90/10 ground beef" },
       { name: "Cheddar cheese", amount: "1.5 oz", section: "Dairy", detail: "Sharp cheddar, shredded (e.g. Tillamook)" },
       { name: "Garlic", amount: "2 cloves", section: "Produce", detail: "Fresh garlic cloves, minced" },
-      { name: "Cumin", amount: "1 tsp", section: "Pantry and Grains", detail: "Ground cumin" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" },
-      { name: "Smoked paprika", amount: "0.5 tsp", section: "Pantry and Grains", detail: "For the beef" }
+      { name: "Cumin", amount: "1 tsp", section: "Seasonings", detail: "Ground cumin" },
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Smoked paprika", amount: "0.5 tsp", section: "Seasonings", detail: "For the beef" }
     ]
   },
   {
@@ -323,9 +323,9 @@ const MEALS = [
       { name: "Broccoli", amount: "1 large head", section: "Produce", detail: "Fresh broccoli crown, cut into bite-sized florets" },
       { name: "Parmesan cheese", amount: "1 oz", section: "Dairy", detail: "Parmigiano-Reggiano, shaved or finely grated" },
       { name: "Olive oil", amount: "2 tbsp", section: "Pantry and Grains", detail: "Extra virgin olive oil" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" },
-      { name: "Garlic powder", amount: "0.5 tsp", section: "Pantry and Grains", detail: "For the chicken" }
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Garlic powder", amount: "0.5 tsp", section: "Seasonings", detail: "For the chicken" }
     ]
   },
   {
@@ -341,9 +341,9 @@ const MEALS = [
       { name: "Garlic", amount: "3 cloves", section: "Produce", detail: "Fresh garlic cloves, minced" },
       { name: "Olive oil", amount: "2 tbsp", section: "Pantry and Grains", detail: "Extra virgin olive oil" },
       { name: "Lemon juice", amount: "1 tbsp", section: "Produce", detail: "Fresh-squeezed, for the salmon" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" },
-      { name: "Dried dill", amount: "0.5 tsp", section: "Pantry and Grains", detail: "For the salmon" }
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Dried dill", amount: "0.5 tsp", section: "Seasonings", detail: "For the salmon" }
     ]
   },
   {
@@ -358,10 +358,10 @@ const MEALS = [
       { name: "Cheddar cheese", amount: "1.5 oz", section: "Dairy", detail: "Sharp cheddar, shredded (e.g. Tillamook)" },
       { name: "Brown rice", amount: "1.5 cups cooked", section: "Pantry and Grains", detail: "Medium-grain brown rice, cooked and cooled slightly" },
       { name: "Garlic", amount: "2 cloves", section: "Produce", detail: "Fresh garlic cloves, minced" },
-      { name: "Cumin", amount: "1 tsp", section: "Pantry and Grains", detail: "Ground cumin" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.25 tsp", section: "Pantry and Grains", detail: "Freshly cracked" },
-      { name: "Chili powder", amount: "0.5 tsp", section: "Pantry and Grains", detail: "For the turkey" }
+      { name: "Cumin", amount: "1 tsp", section: "Seasonings", detail: "Ground cumin" },
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.25 tsp", section: "Seasonings", detail: "Freshly cracked" },
+      { name: "Chili powder", amount: "0.5 tsp", section: "Seasonings", detail: "For the turkey" }
     ]
   },
   {
@@ -375,9 +375,9 @@ const MEALS = [
       { name: "Sweet potatoes", amount: "2 medium", section: "Produce", detail: "Orange-fleshed sweet potatoes, cubed for roasting" },
       { name: "Green beans", amount: "2 cups", section: "Produce", detail: "Fresh green beans, trimmed" },
       { name: "Olive oil", amount: "2 tbsp", section: "Pantry and Grains", detail: "Extra virgin olive oil" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Freshly cracked — generous for steak" },
-      { name: "Garlic powder", amount: "0.5 tsp", section: "Pantry and Grains", detail: "For the sweet potatoes" }
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.5 tsp", section: "Seasonings", detail: "Freshly cracked — generous for steak" },
+      { name: "Garlic powder", amount: "0.5 tsp", section: "Seasonings", detail: "For the sweet potatoes" }
     ]
   },
   {
@@ -391,8 +391,8 @@ const MEALS = [
       { name: "Baby potatoes", amount: "2 cups", section: "Produce", detail: "Mixed baby potatoes (red, yellow, purple), halved" },
       { name: "Green beans", amount: "2 cups", section: "Produce", detail: "Fresh green beans, trimmed" },
       { name: "Olive oil", amount: "2 tbsp", section: "Pantry and Grains", detail: "Extra virgin olive oil" },
-      { name: "Salt", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Kosher salt" },
-      { name: "Black pepper", amount: "0.5 tsp", section: "Pantry and Grains", detail: "Freshly cracked — generous for steak" },
+      { name: "Salt", amount: "0.5 tsp", section: "Seasonings", detail: "Kosher salt" },
+      { name: "Black pepper", amount: "0.5 tsp", section: "Seasonings", detail: "Freshly cracked — generous for steak" },
       { name: "Fresh rosemary", amount: "1 tsp", section: "Produce", detail: "Chopped, for the potatoes" }
     ]
   },

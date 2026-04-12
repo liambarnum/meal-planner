@@ -1,6 +1,6 @@
 /* ─── STATE ─── */
 const SLOTS = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
-const SECTIONS = ['Produce', 'Dairy', 'Meat and Seafood', 'Pantry and Grains', 'Canned and Jarred', 'Refrigerated', 'Frozen'];
+const SECTIONS = ['Produce', 'Dairy', 'Meat and Seafood', 'Pantry and Grains', 'Canned and Jarred', 'Refrigerated', 'Frozen', 'Seasonings'];
 const MACRO_TARGETS = { fats: 65, carbs: 300, fiber: 30, protein: 120 }; // grams per day
 const DAY_ABBRS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -290,10 +290,12 @@ function renderIngredientsList(meal) {
     </div>
     <div class="ingredients-list ingredients-hidden">
       ${(meal.ingredients || []).map(ing => {
-        const has = hasNutritionData(ing.name);
-        const badge = has
-          ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="View Nutrition Facts">NF</button>`
-          : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="Add Nutrition Facts">&#9888;</button>`;
+        const isSeasoning = ing.section === 'Seasonings';
+        const has = !isSeasoning && hasNutritionData(ing.name);
+        const badge = isSeasoning ? ''
+          : has
+            ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="View Nutrition Facts">NF</button>`
+            : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="Add Nutrition Facts">&#9888;</button>`;
         return `
         <div class="ingredient-row">
           <span class="ingredient-amount">${esc(ing.amount)}</span>
