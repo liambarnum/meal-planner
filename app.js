@@ -841,7 +841,7 @@ function bindChat() {
   if (state.apiKey) apiKeyInput.value = state.apiKey;
   renderChatMessages();
 
-  apiKeyInput.addEventListener('change', () => {
+  apiKeyInput.addEventListener('input', () => {
     state.apiKey = apiKeyInput.value.trim();
     saveState();
   });
