@@ -290,15 +290,15 @@ function renderIngredientsList(meal) {
     </div>
     <div class="ingredients-list ingredients-hidden">
       ${(meal.ingredients || []).map(ing => {
-        const nutr = computeIngredientNutrition(ing);
-        const badge = nutr
-          ? `<span class="ingredient-nutrition-badge">${nutr.calories} cal &middot; ${nutr.protein}g P</span>`
-          : '';
+        const has = hasNutritionData(ing.name);
+        const badge = has
+          ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="View Nutrition Facts">NF</button>`
+          : `<span class="ingredient-no-nutrition" title="No nutritional info available">&#9888;</span>`;
         return `
         <div class="ingredient-row">
           <span class="ingredient-amount">${esc(ing.amount)}</span>
           <span class="ingredient-info">
-            <span class="ingredient-name">${esc(ing.name)}${badge}</span>
+            <span class="ingredient-name">${esc(ing.name)} ${badge}</span>
             ${ing.detail ? `<span class="ingredient-detail">${esc(ing.detail)}</span>` : ''}
           </span>
         </div>`;
@@ -973,6 +973,21 @@ function bindNutritionModal() {
 function bindNutritionDelegation() {
   // Use capture phase so this fires before card-level click handlers
   document.addEventListener('click', (e) => {
+    // Ingredient-level NF badge
+    const ingBadge = e.target.closest('.ingredient-nf-badge');
+    if (ingBadge) {
+      e.stopPropagation();
+      e.preventDefault();
+      const mealId = ingBadge.dataset.mealId;
+      const ingName = ingBadge.dataset.ingredient;
+      const meal = getMeal(mealId);
+      if (meal) {
+        const ing = meal.ingredients.find(i => i.name === ingName);
+        if (ing) openIngredientNutritionModal(ing);
+      }
+      return;
+    }
+
     const badge = e.target.closest('.nutrition-badge');
     if (!badge) return;
     e.stopPropagation();

@@ -534,6 +534,31 @@ function openDayNutritionModal(meals, dayLabel) {
   container.innerHTML = renderDayNutritionLabel(meals, dayLabel);
 }
 
+function renderIngredientNutritionLabel(ing) {
+  const key = ing.name.toLowerCase();
+  const staticEntry = STATIC_NUTRITION[key];
+  if (!staticEntry) {
+    return `<div class="nf-no-data"><div class="nf-no-data-title">No Nutrition Data Available</div><div class="nf-no-data-text">Nutrition data is not available for this ingredient.</div></div>`;
+  }
+  const parsed = parseAmount(ing.amount);
+  const { grams } = convertToGrams(parsed, staticEntry.portions);
+  const scale = grams / 100;
+  const totals = {};
+  for (const field of NUTRITION_FIELDS) {
+    const v = staticEntry.nutrients[field];
+    totals[field] = (v !== null && v !== undefined) ? Math.round(v * scale * 10) / 10 : 0;
+  }
+  const servingLine = `<span class="nf-bold">Serving size</span> ${ing.amount}${grams ? ' (' + Math.round(grams) + 'g)' : ''}`;
+  return buildLabelHTML(totals, Math.round(grams), servingLine);
+}
+
+function openIngredientNutritionModal(ing) {
+  const container = document.getElementById('nutrition-label-container');
+  document.getElementById('nutrition-modal-meal-name').textContent = ing.name;
+  document.getElementById('nutrition-overlay').classList.add('open');
+  container.innerHTML = renderIngredientNutritionLabel(ing);
+}
+
 function closeNutritionModal() {
   document.getElementById('nutrition-overlay').classList.remove('open');
 }
