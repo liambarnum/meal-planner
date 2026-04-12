@@ -980,6 +980,30 @@ body {
   font-size: 0.85em;
   cursor: help;
 }
+.chip-nf-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 0 5px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all var(--transition);
+  vertical-align: middle;
+  line-height: 1.4;
+}
+.chip-nf-badge:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-dim);
+}
 .ingredients-hidden {
   display: none !important;
 }

@@ -1326,13 +1326,27 @@ function createIngredientChip(name) {
   chip.draggable = true;
   chip.dataset.ingredient = name;
   if (!hasNutritionData(name)) {
-    chip.innerHTML = '<span class="chip-no-nutrition" title="No nutritional info available">&#9888;</span> ' + esc(name);
+    chip.innerHTML = esc(name) + ' <span class="chip-no-nutrition" title="No nutritional info available">&#9888;</span>';
   } else {
-    chip.textContent = name;
+    chip.innerHTML = esc(name) + ' <button class="chip-nf-badge" title="View Nutrition Facts">NF</button>';
+  }
+
+  // NF badge click — open nutrition modal, don't start drag
+  const nfBtn = chip.querySelector('.chip-nf-badge');
+  if (nfBtn) {
+    nfBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      // Build a minimal ingredient object with a generic "100g" amount for the label
+      openIngredientNutritionModal({ name, amount: '100 g' });
+    });
+    nfBtn.addEventListener('mousedown', e => e.stopPropagation());
+    nfBtn.addEventListener('touchstart', e => e.stopPropagation());
   }
 
   // Click to pick up
   chip.addEventListener('click', e => {
+    if (e.target.closest('.chip-nf-badge') || e.target.closest('.chip-no-nutrition')) return;
     e.stopPropagation();
     pickUpChip(chip);
   });
