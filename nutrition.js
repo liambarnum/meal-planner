@@ -499,24 +499,67 @@ function convertToGrams(parsedAmount, portions) {
   return { grams: quantity * 100 };
 }
 
+// ─── NUTRITION OVERRIDE LAYER ───
+
+function getNutritionOverrides() {
+  try {
+    return JSON.parse(localStorage.getItem('nutritionOverrides') || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+
+function getIngredientEntry(name) {
+  const key = name.toLowerCase();
+  const overrides = getNutritionOverrides();
+  return overrides[key] || STATIC_NUTRITION[key] || null;
+}
+
+function saveNutritionOverride(name, data) {
+  const overrides = getNutritionOverrides();
+  overrides[name.toLowerCase()] = data;
+  localStorage.setItem('nutritionOverrides', JSON.stringify(overrides));
+}
+
+function exportNutritionOverrides() {
+  return getNutritionOverrides();
+}
+
+function importNutritionOverrides(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    throw new Error('Expected a JSON object of nutrition entries');
+  }
+  for (const [key, val] of Object.entries(obj)) {
+    if (!val.nutrients || typeof val.nutrients !== 'object') {
+      throw new Error(`Entry "${key}" is missing a "nutrients" object`);
+    }
+  }
+  const overrides = getNutritionOverrides();
+  for (const [key, val] of Object.entries(obj)) {
+    overrides[key.toLowerCase()] = val;
+  }
+  localStorage.setItem('nutritionOverrides', JSON.stringify(overrides));
+  return Object.keys(obj).length;
+}
+
 // ─── INGREDIENT NUTRITION HELPERS ───
 
 function hasNutritionData(ingredientName) {
-  return !!STATIC_NUTRITION[ingredientName.toLowerCase()];
+  return !!getIngredientEntry(ingredientName);
 }
 
 function computeIngredientNutrition(ing) {
-  const key = ing.name.toLowerCase();
-  const staticEntry = STATIC_NUTRITION[key];
-  if (!staticEntry) return null;
+  const entry = getIngredientEntry(ing.name);
+  if (!entry) return null;
   const parsed = parseAmount(ing.amount);
-  const { grams } = convertToGrams(parsed, staticEntry.portions);
+  const portions = entry.portions || [{ description: '100g', gramWeight: 100, amount: 1 }];
+  const { grams } = convertToGrams(parsed, portions);
   const scale = grams / 100;
   return {
-    calories: Math.round(staticEntry.nutrients.calories * scale),
-    protein: Math.round(staticEntry.nutrients.protein * scale),
-    fat: Math.round(staticEntry.nutrients.totalFat * scale),
-    carbs: Math.round(staticEntry.nutrients.totalCarbs * scale)
+    calories: Math.round(entry.nutrients.calories * scale),
+    protein: Math.round(entry.nutrients.protein * scale),
+    fat: Math.round(entry.nutrients.totalFat * scale),
+    carbs: Math.round(entry.nutrients.totalCarbs * scale)
   };
 }
 
@@ -529,19 +572,19 @@ function computeMealNutrition(meal) {
   let hasAnyNutritionData = false;
 
   for (const ing of (meal.ingredients || [])) {
-    const key = ing.name.toLowerCase();
-    const staticEntry = STATIC_NUTRITION[key];
-    if (!staticEntry) continue;
+    const entry = getIngredientEntry(ing.name);
+    if (!entry) continue;
 
     hasAnyNutritionData = true;
     const parsed = parseAmount(ing.amount);
-    const { grams } = convertToGrams(parsed, staticEntry.portions);
-    const scale = grams / 100; // static data is per 100g
+    const portions = entry.portions || [{ description: '100g', gramWeight: 100, amount: 1 }];
+    const { grams } = convertToGrams(parsed, portions);
+    const scale = grams / 100;
     totalGrams += grams;
 
     for (const field of NUTRITION_FIELDS) {
-      if (staticEntry.nutrients[field] !== null && staticEntry.nutrients[field] !== undefined) {
-        totals[field] += staticEntry.nutrients[field] * scale;
+      if (entry.nutrients[field] !== null && entry.nutrients[field] !== undefined) {
+        totals[field] += entry.nutrients[field] * scale;
       }
     }
   }
@@ -668,7 +711,57 @@ function renderDayNutritionLabel(meals, dayLabel) {
   return buildLabelHTML(totals, servingSizeGrams, servingLine);
 }
 
+// ─── NUTRITION EDIT FORM ───
+
+let _nutritionModalIngredient = null;
+
+function getCurrentNutritionIngredient() {
+  return _nutritionModalIngredient;
+}
+
+const NF_EDIT_FIELDS = [
+  { key: 'calories',     label: 'Calories',       unit: 'kcal' },
+  { key: 'totalFat',     label: 'Total Fat',       unit: 'g' },
+  { key: 'saturatedFat', label: 'Saturated Fat',   unit: 'g' },
+  { key: 'transFat',     label: 'Trans Fat',       unit: 'g' },
+  { key: 'cholesterol',  label: 'Cholesterol',     unit: 'mg' },
+  { key: 'sodium',       label: 'Sodium',          unit: 'mg' },
+  { key: 'totalCarbs',   label: 'Total Carbs',     unit: 'g' },
+  { key: 'dietaryFiber', label: 'Dietary Fiber',   unit: 'g' },
+  { key: 'totalSugars',  label: 'Total Sugars',    unit: 'g' },
+  { key: 'addedSugars',  label: 'Added Sugars',    unit: 'g' },
+  { key: 'protein',      label: 'Protein',         unit: 'g' },
+  { key: 'vitaminD',     label: 'Vitamin D',       unit: 'mcg' },
+  { key: 'calcium',      label: 'Calcium',         unit: 'mg' },
+  { key: 'iron',         label: 'Iron',            unit: 'mg' },
+  { key: 'potassium',    label: 'Potassium',       unit: 'mg' },
+];
+
+function renderNutritionEditForm(ing) {
+  const entry = getIngredientEntry(ing.name);
+  const nutrients = entry ? { ...entry.nutrients } : {};
+  const rows = NF_EDIT_FIELDS.map(f => `
+    <div class="nf-edit-row">
+      <label class="nf-edit-label" for="nf-edit-${f.key}">${f.label} <span class="nf-edit-unit">(${f.unit})</span></label>
+      <input class="nf-edit-input" type="number" step="0.01" min="0" id="nf-edit-${f.key}" data-field="${f.key}" value="${nutrients[f.key] !== undefined ? nutrients[f.key] : ''}">
+    </div>
+  `).join('');
+  return `
+    <div class="nf-edit-form">
+      <p class="nf-edit-desc">Values are per 100g of ingredient.</p>
+      <div class="nf-edit-grid">${rows}</div>
+      <div class="nf-edit-actions">
+        <button class="btn btn-primary" id="nf-edit-save">Save</button>
+        <button class="btn btn-secondary" id="nf-edit-cancel">Cancel</button>
+      </div>
+    </div>
+  `;
+}
+
 function openNutritionModal(meal) {
+  _nutritionModalIngredient = null;
+  const editBtn = document.getElementById('nf-edit-btn');
+  if (editBtn) editBtn.style.display = 'none';
   const container = document.getElementById('nutrition-label-container');
   document.getElementById('nutrition-modal-meal-name').textContent = meal.name;
   document.getElementById('nutrition-overlay').classList.add('open');
@@ -676,6 +769,9 @@ function openNutritionModal(meal) {
 }
 
 function openDayNutritionModal(meals, dayLabel) {
+  _nutritionModalIngredient = null;
+  const editBtn = document.getElementById('nf-edit-btn');
+  if (editBtn) editBtn.style.display = 'none';
   const container = document.getElementById('nutrition-label-container');
   document.getElementById('nutrition-modal-meal-name').textContent = dayLabel;
   document.getElementById('nutrition-overlay').classList.add('open');
@@ -683,28 +779,37 @@ function openDayNutritionModal(meals, dayLabel) {
 }
 
 function renderIngredientNutritionLabel(ing) {
-  const key = ing.name.toLowerCase();
-  const staticEntry = STATIC_NUTRITION[key];
-  if (!staticEntry) {
+  const entry = getIngredientEntry(ing.name);
+  if (!entry) {
     return `<div class="nf-no-data"><div class="nf-no-data-title">No Nutrition Data Available</div><div class="nf-no-data-text">Nutrition data is not available for this ingredient.</div></div>`;
   }
   const parsed = parseAmount(ing.amount);
-  const { grams } = convertToGrams(parsed, staticEntry.portions);
+  const portions = entry.portions || [{ description: '100g', gramWeight: 100, amount: 1 }];
+  const { grams } = convertToGrams(parsed, portions);
   const scale = grams / 100;
   const totals = {};
   for (const field of NUTRITION_FIELDS) {
-    const v = staticEntry.nutrients[field];
+    const v = entry.nutrients[field];
     totals[field] = (v !== null && v !== undefined) ? Math.round(v * scale * 10) / 10 : 0;
   }
   const servingLine = `<span class="nf-bold">Serving size</span> ${ing.amount}${grams ? ' (' + Math.round(grams) + 'g)' : ''}`;
-  return buildLabelHTML(totals, Math.round(grams), servingLine, { fdcId: staticEntry.fdcId, description: staticEntry.description });
+  const isOverride = !!getNutritionOverrides()[ing.name.toLowerCase()];
+  const sourceInfo = isOverride ? null : { fdcId: entry.fdcId, description: entry.description };
+  return buildLabelHTML(totals, Math.round(grams), servingLine, sourceInfo);
 }
 
-function openIngredientNutritionModal(ing) {
+function openIngredientNutritionModal(ing, editMode = false) {
+  _nutritionModalIngredient = ing;
+  const editBtn = document.getElementById('nf-edit-btn');
+  if (editBtn) editBtn.style.display = '';
   const container = document.getElementById('nutrition-label-container');
   document.getElementById('nutrition-modal-meal-name').textContent = ing.name;
   document.getElementById('nutrition-overlay').classList.add('open');
-  container.innerHTML = renderIngredientNutritionLabel(ing);
+  if (editMode || !getIngredientEntry(ing.name)) {
+    container.innerHTML = renderNutritionEditForm(ing);
+  } else {
+    container.innerHTML = renderIngredientNutritionLabel(ing);
+  }
 }
 
 function closeNutritionModal() {

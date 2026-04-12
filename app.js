@@ -293,7 +293,7 @@ function renderIngredientsList(meal) {
         const has = hasNutritionData(ing.name);
         const badge = has
           ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="View Nutrition Facts">NF</button>`
-          : `<span class="ingredient-no-nutrition" title="No nutritional info available">&#9888;</span>`;
+          : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="Add Nutrition Facts">&#9888;</button>`;
         return `
         <div class="ingredient-row">
           <span class="ingredient-amount">${esc(ing.amount)}</span>
@@ -967,12 +967,62 @@ function bindNutritionModal() {
   document.getElementById('nutrition-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'nutrition-overlay') closeNutritionModal();
   });
+
+  document.getElementById('nf-edit-btn').addEventListener('click', () => {
+    const ing = getCurrentNutritionIngredient();
+    if (!ing) return;
+    document.getElementById('nutrition-label-container').innerHTML = renderNutritionEditForm(ing);
+  });
+
+  document.getElementById('nutrition-label-container').addEventListener('click', e => {
+    if (e.target.id === 'nf-edit-save') {
+      const ing = getCurrentNutritionIngredient();
+      if (!ing) return;
+      const nutrients = {};
+      document.querySelectorAll('.nf-edit-input').forEach(input => {
+        nutrients[input.dataset.field] = parseFloat(input.value) || 0;
+      });
+      saveNutritionOverride(ing.name, {
+        nutrients,
+        portions: [{ description: '100g', gramWeight: 100, amount: 1 }]
+      });
+      document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+      updateNfStatus();
+    }
+    if (e.target.id === 'nf-edit-cancel') {
+      const ing = getCurrentNutritionIngredient();
+      if (!ing) return;
+      document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+    }
+  });
+}
+
+function updateNfStatus() {
+  const el = document.getElementById('nf-status');
+  if (!el) return;
+  const count = Object.keys(getNutritionOverrides()).length;
+  el.textContent = count > 0 ? `${count} custom override${count !== 1 ? 's' : ''} stored.` : '';
 }
 
 /* ─── NUTRITION BADGE DELEGATION ─── */
 function bindNutritionDelegation() {
   // Use capture phase so this fires before card-level click handlers
   document.addEventListener('click', (e) => {
+    // Warning icon for ingredients missing NF data → open edit form
+    const noNfBadge = e.target.closest('.ingredient-no-nutrition');
+    if (noNfBadge) {
+      e.stopPropagation();
+      e.preventDefault();
+      const mealId = noNfBadge.dataset.mealId;
+      const ingName = noNfBadge.dataset.ingredient;
+      const meal = getMeal(mealId);
+      if (meal) {
+        const ing = meal.ingredients.find(i => i.name === ingName);
+        if (ing) openIngredientNutritionModal(ing, true);
+      }
+      return;
+    }
+
     // Ingredient-level NF badge
     const ingBadge = e.target.closest('.ingredient-nf-badge');
     if (ingBadge) {
@@ -1210,8 +1260,44 @@ function renderPreferences() {
     });
   }
 
+  // Nutrition Data import/export
+  if (!prefsInitialized) {
+    document.getElementById('export-nf-btn').addEventListener('click', () => {
+      const overrides = exportNutritionOverrides();
+      const blob = new Blob([JSON.stringify(overrides, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nutrition-overrides.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    document.getElementById('import-nf-input').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('nf-status');
+      const reader = new FileReader();
+      reader.onload = evt => {
+        try {
+          const obj = JSON.parse(evt.target.result);
+          const count = importNutritionOverrides(obj);
+          updateNfStatus();
+          statusEl.textContent = `✓ Imported ${count} nutrition entr${count !== 1 ? 'ies' : 'y'}.`;
+        } catch (err) {
+          statusEl.textContent = `✗ Import failed: ${err.message}`;
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+
   // Tier list
   renderTierList();
+  updateNfStatus();
   prefsInitialized = true;
 }
 

@@ -974,7 +974,24 @@ body {
   color: var(--gold);
   background: var(--gold-dim);
 }
-.ingredient-no-nutrition,
+.ingredient-no-nutrition {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.85em;
+  color: #e6a817;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all var(--transition);
+}
+.ingredient-no-nutrition:hover {
+  border-color: #e6a817;
+  background: rgba(230, 168, 23, 0.1);
+}
 .chip-no-nutrition {
   color: #e6a817;
   font-size: 0.85em;
@@ -1069,6 +1086,64 @@ body {
 }
 
 .nutrition-modal-close:hover { color: var(--text); }
+
+.nf-edit-btn {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  margin-left: auto;
+  margin-right: 8px;
+  line-height: 1.4;
+}
+
+/* ─── NUTRITION EDIT FORM ─── */
+.nf-edit-form {
+  background: var(--card-bg);
+  color: var(--text);
+  padding: 16px;
+}
+.nf-edit-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+.nf-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+.nf-edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.nf-edit-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.nf-edit-unit {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+.nf-edit-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 6px;
+  font-size: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.nf-edit-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.nf-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 
 /* ─── FDA NUTRITION LABEL ─── */
 .nutrition-label {

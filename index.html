@@ -140,6 +140,20 @@
         <p class="prefs-ai-hint" id="import-status"></p>
       </section>
 
+      <!-- Nutrition Data -->
+      <section class="prefs-section">
+        <h3 class="prefs-section-title">Nutrition Data</h3>
+        <p class="prefs-section-desc">Import or export custom nutrition overrides for ingredients not in the built-in database. Click the &#9888; warning icon on any ingredient to add its data manually.</p>
+        <div class="meal-gen-actions">
+          <label class="btn btn-secondary meal-import-label">
+            Import NF Data
+            <input type="file" id="import-nf-input" accept=".json" style="display:none">
+          </label>
+          <button id="export-nf-btn" class="btn btn-secondary">Export NF Data</button>
+        </div>
+        <p class="prefs-ai-hint" id="nf-status"></p>
+      </section>
+
     </div>
   </div>
 
@@ -214,6 +228,7 @@
     <div class="modal nutrition-modal">
       <div class="nutrition-modal-header">
         <span id="nutrition-modal-meal-name"></span>
+        <button class="btn btn-secondary nf-edit-btn" id="nf-edit-btn" style="display:none">Edit</button>
         <button class="nutrition-modal-close" id="nutrition-close-btn">&times;</button>
       </div>
       <div id="nutrition-label-container"></div>
