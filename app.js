@@ -1118,6 +1118,16 @@ function getAllIngredientNames() {
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
+function getSeasoningNames() {
+  const names = new Set();
+  state.masterMeals.forEach(m =>
+    m.ingredients.forEach(i => {
+      if (i.section === 'Seasonings') names.add(i.name);
+    })
+  );
+  return names;
+}
+
 function renderPreferences() {
   // Allergens checklist
   const checklist = document.getElementById('allergen-checklist');
@@ -1306,6 +1316,7 @@ function renderPreferences() {
 function renderTierList() {
   const bank = document.getElementById('tier-bank');
   const allIngredients = getAllIngredientNames();
+  const seasonings = getSeasoningNames();
 
   // Clear tier drops
   document.querySelectorAll('.tier-drop').forEach(d => d.innerHTML = '');
@@ -1316,7 +1327,7 @@ function renderTierList() {
     // migrate old "never" tier
     if (tier === 'never') { tier = 'try'; state.ingredientTiers[name] = 'try'; }
     if (tier === 'trash') return; // trashed — don't render
-    const chip = createIngredientChip(name);
+    const chip = createIngredientChip(name, seasonings);
     if (tier) {
       const drop = document.querySelector(`.tier-drop[data-tier="${tier}"]`);
       if (drop) { drop.appendChild(chip); return; }
@@ -1408,12 +1419,14 @@ function placePickedChip(zone) {
   dropPickedChip();
 }
 
-function createIngredientChip(name) {
+function createIngredientChip(name, seasonings) {
   const chip = document.createElement('div');
   chip.className = 'tier-chip';
   chip.draggable = true;
   chip.dataset.ingredient = name;
-  if (!hasNutritionData(name)) {
+  if (seasonings && seasonings.has(name)) {
+    chip.innerHTML = esc(name);
+  } else if (!hasNutritionData(name)) {
     chip.innerHTML = esc(name) + ' <span class="chip-no-nutrition" title="No nutritional info available">&#9888;</span>';
   } else {
     chip.innerHTML = esc(name) + ' <button class="chip-nf-badge" title="View Nutrition Facts">NF</button>';
