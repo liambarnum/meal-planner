@@ -1381,6 +1381,10 @@ body {
   border-color: var(--gold);
 }
 
+.save-profile-btn {
+  margin-top: 10px;
+}
+
 .prefs-ai-hint {
   margin-top: 12px;
   font-size: 0.78rem;

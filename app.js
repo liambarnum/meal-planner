@@ -1389,6 +1389,18 @@ function renderPreferences() {
       saveState();
     });
 
+    const saveProfileBtn = document.getElementById('save-diet-profile-btn');
+    saveProfileBtn.addEventListener('click', () => {
+      state.dietGoals = goalsEl.value;
+      saveState();
+      saveProfileBtn.textContent = 'Saved!';
+      saveProfileBtn.disabled = true;
+      setTimeout(() => {
+        saveProfileBtn.textContent = 'Save Profile';
+        saveProfileBtn.disabled = false;
+      }, 1500);
+    });
+
     // Body stats inputs
     const statsFields = ['bs-sex-male', 'bs-sex-female', 'bs-age', 'bs-height-ft', 'bs-height-in',
                          'bs-weight-lbs', 'bs-height-cm', 'bs-weight-kg', 'bs-activity', 'bs-unit-toggle'];
