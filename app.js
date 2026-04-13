@@ -165,6 +165,10 @@ function getMeal(id) {
 
 // Returns macros from ingredient-level USDA computation when available,
 // falling back to the manually-specified meal.macros.
+function getMealCalories(m) {
+  return Math.round(m.protein * 4 + m.carbs * 4 + m.fats * 9);
+}
+
 function getEffectiveMacros(meal) {
   const { totals, hasAnyNutritionData } = computeMealNutrition(meal);
   if (hasAnyNutritionData) {
@@ -499,7 +503,7 @@ function createMealCard(meal) {
     </div>
     <div class="meal-card-actions">
       <div class="macro-badge">
-        ${(() => { const m = getEffectiveMacros(meal); return `<span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
+        ${(() => { const m = getEffectiveMacros(meal); return `<span class="calories">${getMealCalories(m)} kcal</span><span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
       </div>
       <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
     </div>
@@ -580,7 +584,7 @@ function renderDayView(container, dateISO) {
           <div class="slot-meal-desc">${esc(meal.description)}</div>
           <div class="meal-card-actions">
             <div class="macro-badge">
-              ${(() => { const m = getEffectiveMacros(meal); return `<span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
+              ${(() => { const m = getEffectiveMacros(meal); return `<span class="calories">${getMealCalories(m)} kcal</span><span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
             </div>
             <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
           </div>

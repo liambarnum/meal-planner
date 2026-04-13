@@ -284,6 +284,7 @@ body {
 
 .macro-badge span { white-space: nowrap; }
 .macro-badge .fiber { color: var(--green); font-weight: 600; }
+.macro-badge .calories { color: var(--text); font-weight: 700; }
 
 /* ─── DAY VIEW ─── */
 .day-summary {
