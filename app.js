@@ -435,6 +435,36 @@ function bindIngredientsToggle(el) {
       icon.textContent = '\u25B6';
     }
   });
+
+  // Bind NF warning icons directly (Safari doesn't reliably delegate clicks on innerHTML buttons)
+  el.querySelectorAll('.ingredient-no-nutrition').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const mealId = badge.dataset.mealId;
+      const ingName = badge.dataset.ingredient;
+      const meal = getMeal(mealId);
+      if (meal) {
+        const ing = meal.ingredients.find(i => i.name === ingName);
+        if (ing) openIngredientNutritionModal(ing, true);
+      }
+    });
+  });
+
+  // Bind NF badges directly for the same reason
+  el.querySelectorAll('.ingredient-nf-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const mealId = badge.dataset.mealId;
+      const ingName = badge.dataset.ingredient;
+      const meal = getMeal(mealId);
+      if (meal) {
+        const ing = meal.ingredients.find(i => i.name === ingName);
+        if (ing) openIngredientNutritionModal(ing);
+      }
+    });
+  });
 }
 
 function createMealCard(meal) {
@@ -1116,36 +1146,6 @@ function updateNfStatus() {
 function bindNutritionDelegation() {
   // Use capture phase so this fires before card-level click handlers
   document.addEventListener('click', (e) => {
-    // Warning icon for ingredients missing NF data → open edit form
-    const noNfBadge = e.target.closest('.ingredient-no-nutrition');
-    if (noNfBadge) {
-      e.stopPropagation();
-      e.preventDefault();
-      const mealId = noNfBadge.dataset.mealId;
-      const ingName = noNfBadge.dataset.ingredient;
-      const meal = getMeal(mealId);
-      if (meal) {
-        const ing = meal.ingredients.find(i => i.name === ingName);
-        if (ing) openIngredientNutritionModal(ing, true);
-      }
-      return;
-    }
-
-    // Ingredient-level NF badge
-    const ingBadge = e.target.closest('.ingredient-nf-badge');
-    if (ingBadge) {
-      e.stopPropagation();
-      e.preventDefault();
-      const mealId = ingBadge.dataset.mealId;
-      const ingName = ingBadge.dataset.ingredient;
-      const meal = getMeal(mealId);
-      if (meal) {
-        const ing = meal.ingredients.find(i => i.name === ingName);
-        if (ing) openIngredientNutritionModal(ing);
-      }
-      return;
-    }
-
     const badge = e.target.closest('.nutrition-badge');
     if (!badge) return;
     e.stopPropagation();
