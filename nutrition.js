@@ -798,16 +798,45 @@ function renderIngredientNutritionLabel(ing) {
   return buildLabelHTML(totals, Math.round(grams), servingLine, sourceInfo);
 }
 
-function openIngredientNutritionModal(ing, editMode = false) {
+function renderNoNutritionView(ing) {
+  const safeName = ing.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `
+    <div class="nf-no-data">
+      <div class="nf-no-data-title">No Nutrition Data</div>
+      <div class="nf-no-data-text">
+        No nutrition facts are available for <strong>${safeName}</strong>.
+        You can enter values manually to track this ingredient.
+      </div>
+      <button class="btn btn-primary nf-enter-manual-btn" style="margin-top:16px">Enter manually</button>
+    </div>
+  `;
+}
+
+function openIngredientNutritionModal(ing, noDataMode = false) {
   _nutritionModalIngredient = ing;
   const editBtn = document.getElementById('nf-edit-btn');
-  if (editBtn) editBtn.style.display = '';
   const container = document.getElementById('nutrition-label-container');
   document.getElementById('nutrition-modal-meal-name').textContent = ing.name;
   document.getElementById('nutrition-overlay').classList.add('open');
-  if (editMode || !getIngredientEntry(ing.name)) {
+
+  const hasEntry = !!getIngredientEntry(ing.name);
+
+  if (noDataMode && !hasEntry) {
+    // Show explanation first; "Enter manually" button wires up below
+    if (editBtn) editBtn.style.display = 'none';
+    container.innerHTML = renderNoNutritionView(ing);
+    const manualBtn = container.querySelector('.nf-enter-manual-btn');
+    if (manualBtn) {
+      manualBtn.addEventListener('click', () => {
+        if (editBtn) editBtn.style.display = '';
+        container.innerHTML = renderNutritionEditForm(ing);
+      });
+    }
+  } else if (!hasEntry) {
+    if (editBtn) editBtn.style.display = '';
     container.innerHTML = renderNutritionEditForm(ing);
   } else {
+    if (editBtn) editBtn.style.display = '';
     container.innerHTML = renderIngredientNutritionLabel(ing);
   }
 }
