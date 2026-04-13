@@ -1761,7 +1761,7 @@ function createIngredientChip(name, seasonings) {
     nfBtn.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
-      openIngredientNutritionModal({ name, amount: '100 g' });
+      openIngredientNutritionModal({ name, amount: getDefaultServing(name) });
     });
     nfBtn.addEventListener('mousedown', e => e.stopPropagation());
     nfBtn.addEventListener('touchstart', e => e.stopPropagation());
