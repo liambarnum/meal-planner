@@ -995,7 +995,7 @@ body {
 .chip-no-nutrition {
   color: #e6a817;
   font-size: 0.85em;
-  cursor: help;
+  cursor: pointer;
 }
 .chip-nf-badge {
   display: inline-flex;

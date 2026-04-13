@@ -405,7 +405,7 @@ function renderIngredientsList(meal) {
         const badge = isSeasoning ? ''
           : has
             ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="View Nutrition Facts">NF</button>`
-            : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="Add Nutrition Facts">&#9888;</button>`;
+            : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="No nutritional data currently linked with ingredient.">&#9888;</button>`;
         return `
         <div class="ingredient-row">
           <span class="ingredient-amount">${esc(ing.amount)}</span>
@@ -1723,7 +1723,7 @@ function createIngredientChip(name, seasonings) {
   if (seasonings && seasonings.has(name)) {
     chip.innerHTML = esc(name);
   } else if (!hasNutritionData(name)) {
-    chip.innerHTML = esc(name) + ' <span class="chip-no-nutrition" title="No nutritional info available">&#9888;</span>';
+    chip.innerHTML = esc(name) + ' <span class="chip-no-nutrition" title="No nutritional data currently linked with ingredient.">&#9888;</span>';
   } else {
     chip.innerHTML = esc(name) + ' <button class="chip-nf-badge" title="View Nutrition Facts">NF</button>';
   }
@@ -1734,11 +1734,22 @@ function createIngredientChip(name, seasonings) {
     nfBtn.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
-      // Build a minimal ingredient object with a generic "100g" amount for the label
       openIngredientNutritionModal({ name, amount: '100 g' });
     });
     nfBtn.addEventListener('mousedown', e => e.stopPropagation());
     nfBtn.addEventListener('touchstart', e => e.stopPropagation());
+  }
+
+  // No-nutrition warning click — open nutrition modal in noData mode
+  const noNfSpan = chip.querySelector('.chip-no-nutrition');
+  if (noNfSpan) {
+    noNfSpan.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      openIngredientNutritionModal({ name, amount: '100 g' }, true);
+    });
+    noNfSpan.addEventListener('mousedown', e => e.stopPropagation());
+    noNfSpan.addEventListener('touchstart', e => e.stopPropagation());
   }
 
   // Click to pick up
