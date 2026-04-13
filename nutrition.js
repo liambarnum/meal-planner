@@ -681,7 +681,7 @@ function renderNutritionLabel(meal) {
   if (!hasAnyNutritionData) {
     return `<div class="nf-no-data"><div class="nf-no-data-title">No Nutrition Data Available</div><div class="nf-no-data-text">Nutrition data is not available for this meal's ingredients.</div></div>`;
   }
-  const servingLine = `<span class="nf-bold">Serving size</span> 1 meal${servingSizeGrams ? ' (' + servingSizeGrams + 'g)' : ''}`;
+  const servingLine = `<span class="nf-bold">Serving size</span> 1 meal`;
   return buildLabelHTML(totals, servingSizeGrams, servingLine);
 }
 
@@ -707,7 +707,7 @@ function renderDayNutritionLabel(meals, dayLabel) {
   if (!hasAnyNutritionData) {
     return `<div class="nf-no-data"><div class="nf-no-data-title">No Nutrition Data Available</div><div class="nf-no-data-text">No meals assigned for this day.</div></div>`;
   }
-  const servingLine = `<span class="nf-bold">Daily total</span> ${meals.length} meal${meals.length !== 1 ? 's' : ''}${servingSizeGrams ? ' (' + servingSizeGrams + 'g)' : ''}`;
+  const servingLine = `<span class="nf-bold">Daily total</span> ${meals.length} meal${meals.length !== 1 ? 's' : ''}`;
   return buildLabelHTML(totals, servingSizeGrams, servingLine);
 }
 
@@ -792,7 +792,7 @@ function renderIngredientNutritionLabel(ing) {
     const v = entry.nutrients[field];
     totals[field] = (v !== null && v !== undefined) ? Math.round(v * scale * 10) / 10 : 0;
   }
-  const servingLine = `<span class="nf-bold">Serving size</span> ${ing.amount}${grams ? ' (' + Math.round(grams) + 'g)' : ''}`;
+  const servingLine = `<span class="nf-bold">Serving size</span> ${ing.amount}`;
   const isOverride = !!getNutritionOverrides()[ing.name.toLowerCase()];
   const sourceInfo = isOverride ? null : { fdcId: entry.fdcId, description: entry.description };
   return buildLabelHTML(totals, Math.round(grams), servingLine, sourceInfo);
