@@ -163,6 +163,21 @@ function getMeal(id) {
   return state.masterMeals.find(m => m.id === id);
 }
 
+// Returns macros from ingredient-level USDA computation when available,
+// falling back to the manually-specified meal.macros.
+function getEffectiveMacros(meal) {
+  const { totals, hasAnyNutritionData } = computeMealNutrition(meal);
+  if (hasAnyNutritionData) {
+    return {
+      fats: Math.round(totals.totalFat),
+      carbs: Math.round(totals.totalCarbs),
+      fiber: Math.round(totals.dietaryFiber),
+      protein: Math.round(totals.protein)
+    };
+  }
+  return meal.macros;
+}
+
 /* ─── TDEE CALCULATION ─── */
 const ACTIVITY_MULTIPLIERS = {
   sedentary: 1.2,
@@ -440,10 +455,7 @@ function createMealCard(meal) {
     </div>
     <div class="meal-card-actions">
       <div class="macro-badge">
-        <span>F: ${meal.macros.fats}g</span>
-        <span>C: ${meal.macros.carbs}g</span>
-        <span class="fiber">Fb: ${meal.macros.fiber}g</span>
-        <span>P: ${meal.macros.protein}g</span>
+        ${(() => { const m = getEffectiveMacros(meal); return `<span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
       </div>
       <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
     </div>
@@ -468,10 +480,11 @@ function renderDayView(container, dateISO) {
     const key = `${dateISO}-${slot}`;
     const meal = getMeal(state.assignments[key]);
     if (meal) {
-      totals.fats += meal.macros.fats;
-      totals.carbs += meal.macros.carbs;
-      totals.fiber += meal.macros.fiber;
-      totals.protein += meal.macros.protein;
+      const m = getEffectiveMacros(meal);
+      totals.fats += m.fats;
+      totals.carbs += m.carbs;
+      totals.fiber += m.fiber;
+      totals.protein += m.protein;
     }
   });
 
@@ -523,10 +536,7 @@ function renderDayView(container, dateISO) {
           <div class="slot-meal-desc">${esc(meal.description)}</div>
           <div class="meal-card-actions">
             <div class="macro-badge">
-              <span>F: ${meal.macros.fats}g</span>
-              <span>C: ${meal.macros.carbs}g</span>
-              <span class="fiber">Fb: ${meal.macros.fiber}g</span>
-              <span>P: ${meal.macros.protein}g</span>
+              ${(() => { const m = getEffectiveMacros(meal); return `<span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
             </div>
             <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
           </div>
