@@ -340,6 +340,8 @@ function renderDayTabs() {
     btn.textContent = formatDateShort(iso);
     btn.addEventListener('click', () => {
       state.currentDay = iso;
+      pendingAssignDate = null;
+      pendingAssignSlot = null;
       renderDayTabs();
       renderPlanner();
     });
@@ -353,16 +355,16 @@ function renderDayTabs() {
 }
 
 /* ─── PLANNER RENDERING ─── */
-function renderPlanner() {
+function renderPlanner(expandCategory) {
   const content = document.getElementById('planner-content');
   if (state.currentDay === 'All') {
-    renderAllMeals(content);
+    renderAllMeals(content, expandCategory);
   } else {
     renderDayView(content, state.currentDay);
   }
 }
 
-function renderAllMeals(container) {
+function renderAllMeals(container, expandCategory) {
   container.innerHTML = '';
   const categories = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
   categories.forEach(cat => {
@@ -372,17 +374,18 @@ function renderAllMeals(container) {
     const section = document.createElement('div');
     section.className = 'category-section';
 
+    const collapsed = expandCategory && cat !== expandCategory;
     const header = document.createElement('div');
     header.className = 'category-header';
-    header.innerHTML = `<span class="category-toggle-icon">&#9660;</span> ${esc(cat)} <span class="category-count">(${meals.length})</span>`;
+    header.innerHTML = `<span class="category-toggle-icon">${collapsed ? '\u25B6' : '\u25BC'}</span> ${esc(cat)} <span class="category-count">(${meals.length})</span>`;
 
     const body = document.createElement('div');
-    body.className = 'category-body';
+    body.className = 'category-body' + (collapsed ? ' category-collapsed' : '');
     meals.forEach(meal => body.appendChild(createMealCard(meal)));
 
     header.addEventListener('click', () => {
-      const collapsed = body.classList.toggle('category-collapsed');
-      header.querySelector('.category-toggle-icon').textContent = collapsed ? '\u25B6' : '\u25BC';
+      const isCollapsed = body.classList.toggle('category-collapsed');
+      header.querySelector('.category-toggle-icon').textContent = isCollapsed ? '\u25B6' : '\u25BC';
     });
 
     section.appendChild(header);
@@ -496,7 +499,7 @@ function createMealCard(meal) {
     if (e.target.closest('.meal-delete-btn')) return;
     if (e.target.closest('.nutrition-badge')) return;
     if (e.target.closest('.ingredients-toggle') || e.target.closest('.ingredients-list')) return;
-    openModal(meal.id);
+    openModal(meal.id, pendingAssignDate, pendingAssignSlot);
   });
   return card;
 }
@@ -598,6 +601,8 @@ function renderDayView(container, dateISO) {
 
 /* ─── ASSIGNMENT MODAL ─── */
 let modalMealId = null;
+let pendingAssignDate = null;
+let pendingAssignSlot = null;
 
 function bindModal() {
   document.getElementById('modal-cancel').addEventListener('click', closeModal);
@@ -644,9 +649,11 @@ function openModal(mealId, preDate, preSlot) {
   if (preSlot) document.getElementById('modal-slot').value = preSlot;
 
   if (!mealId) {
+    pendingAssignDate = preDate || null;
+    pendingAssignSlot = preSlot || null;
     state.currentDay = 'All';
     renderDayTabs();
-    renderPlanner();
+    renderPlanner(preSlot);
     return;
   }
 
@@ -656,6 +663,8 @@ function openModal(mealId, preDate, preSlot) {
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   modalMealId = null;
+  pendingAssignDate = null;
+  pendingAssignSlot = null;
 }
 
 /* ─── CALENDAR PICKER ─── */
