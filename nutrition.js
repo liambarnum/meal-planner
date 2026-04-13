@@ -243,7 +243,7 @@ const STATIC_NUTRITION = {
     fdcId: 172850,
     description: "Turkey, ground, 93% lean, 7% fat, raw",
     nutrients: {"protein":18.73,"totalFat":8.34,"totalCarbs":0,"calories":150,"dietaryFiber":0,"calcium":21,"iron":1.17,"potassium":213,"sodium":69,"vitaminD":0.4,"cholesterol":74,"transFat":0.112,"saturatedFat":2.17,"totalSugars":0},
-    portions: [{"description":"oz","gramWeight":85,"amount":1},{"description":"lb","gramWeight":453,"amount":1}]
+    portions: [{"description":"oz","gramWeight":28.35,"amount":1},{"description":"lb","gramWeight":453.59,"amount":1}]
   },
   'honey': {
     fdcId: 169640,
