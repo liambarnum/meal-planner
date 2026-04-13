@@ -367,6 +367,15 @@ function renderPlanner(expandCategory) {
 function renderAllMeals(container, expandCategory) {
   container.innerHTML = '';
   const categories = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
+
+  // When an expandCategory is specified, collapse all others and expand just that one
+  if (expandCategory) {
+    categories.forEach(cat => {
+      if (cat === expandCategory) collapsedCategories.delete(cat);
+      else collapsedCategories.add(cat);
+    });
+  }
+
   categories.forEach(cat => {
     const meals = state.masterMeals.filter(m => m.category === cat);
     if (meals.length === 0) return;
@@ -374,7 +383,7 @@ function renderAllMeals(container, expandCategory) {
     const section = document.createElement('div');
     section.className = 'category-section';
 
-    const collapsed = expandCategory && cat !== expandCategory;
+    const collapsed = collapsedCategories.has(cat);
     const header = document.createElement('div');
     header.className = 'category-header';
     header.innerHTML = `<span class="category-toggle-icon">${collapsed ? '\u25B6' : '\u25BC'}</span> ${esc(cat)} <span class="category-count">(${meals.length})</span>`;
@@ -386,6 +395,8 @@ function renderAllMeals(container, expandCategory) {
     header.addEventListener('click', () => {
       const isCollapsed = body.classList.toggle('category-collapsed');
       header.querySelector('.category-toggle-icon').textContent = isCollapsed ? '\u25B6' : '\u25BC';
+      if (isCollapsed) collapsedCategories.add(cat);
+      else collapsedCategories.delete(cat);
     });
 
     section.appendChild(header);
@@ -598,6 +609,9 @@ function renderDayView(container, dateISO) {
     container.appendChild(slotEl);
   });
 }
+
+// Tracks which categories are collapsed in the All meals view (persists across page navigation)
+const collapsedCategories = new Set(['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert']);
 
 /* ─── ASSIGNMENT MODAL ─── */
 let modalMealId = null;
