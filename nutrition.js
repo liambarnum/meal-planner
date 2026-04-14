@@ -87,7 +87,7 @@ const STATIC_NUTRITION = {
     description: "Beans, black turtle, mature seeds, canned",
     nutrients: {"protein":6.03,"totalFat":0.29,"totalCarbs":16.55,"calories":91,"dietaryFiber":6.9,"calcium":35,"iron":1.9,"potassium":308,"sodium":384,"vitaminD":0,"cholesterol":0,"transFat":0,"saturatedFat":0.075,"totalSugars":0.23},
     portions: [{"description":"cup","gramWeight":240,"amount":1},{"description":"can","gramWeight":425,"amount":1}],
-    defaultServing: '1 can'
+    defaultServing: '1 can (~15 oz)'
   },
   'black pepper': {
     fdcId: 170931,
@@ -142,8 +142,8 @@ const STATIC_NUTRITION = {
     fdcId: 171986,
     description: "Fish, tuna, light, canned in water, without salt, drained solids",
     nutrients: {"protein":25.51,"totalFat":0.82,"totalCarbs":0,"calories":116,"dietaryFiber":0,"calcium":11,"iron":1.53,"potassium":237,"sodium":50,"vitaminD":0,"cholesterol":30,"transFat":0,"saturatedFat":0.234,"totalSugars":0},
-    portions: [{"description":"oz","gramWeight":28.35,"amount":1},{"description":"can","gramWeight":142,"amount":1}],
-    defaultServing: '1 can'
+    portions: [{"description":"can","gramWeight":142,"amount":1},{"description":"oz","gramWeight":28.35,"amount":1}],
+    defaultServing: '1 can (~5 oz)'
   },
   'carrots': {
     fdcId: 170393,
@@ -360,14 +360,14 @@ const STATIC_NUTRITION = {
     description: "Beans, pinto, canned, drained solids",
     nutrients: {"protein":6.99,"totalFat":0.9,"totalCarbs":20.22,"calories":114,"dietaryFiber":5.5,"calcium":63,"iron":1.33,"potassium":274,"sodium":239,"vitaminD":0,"cholesterol":0,"transFat":0,"saturatedFat":0.158,"totalSugars":0.54},
     portions: [{"description":"cup","gramWeight":240,"amount":1},{"description":"can","gramWeight":277,"amount":1}],
-    defaultServing: '1 can'
+    defaultServing: '1 can (~15 oz, drained)'
   },
   'plain greek yogurt': {
     fdcId: 171304,
     description: "Yogurt, Greek, plain, whole milk",
     nutrients: {"protein":9,"totalFat":5,"totalCarbs":3.98,"calories":97,"dietaryFiber":0,"calcium":100,"iron":0,"potassium":141,"sodium":35,"vitaminD":0,"cholesterol":13,"transFat":0,"saturatedFat":2.395,"totalSugars":4},
     portions: [{"description":"cup","gramWeight":245,"amount":1},{"description":"container","gramWeight":150,"amount":1},{"description":"tbsp","gramWeight":15,"amount":1}],
-    defaultServing: '1 cup'
+    defaultServing: '1 cup (245g)'
   },
   'raspberries': {
     fdcId: 167755,
@@ -401,8 +401,8 @@ const STATIC_NUTRITION = {
     fdcId: 175167,
     description: "Fish, salmon, Atlantic, farmed, raw",
     nutrients: {"protein":20.42,"totalFat":13.42,"totalCarbs":0,"calories":208,"dietaryFiber":0,"calcium":9,"iron":0.34,"potassium":363,"sodium":59,"vitaminD":11,"cholesterol":55,"transFat":0,"saturatedFat":3.05,"totalSugars":0},
-    portions: [{"description":"oz","gramWeight":28.35,"amount":1},{"description":"fillet","gramWeight":170,"amount":1}],
-    defaultServing: '1 fillet'
+    portions: [{"description":"fillet","gramWeight":170,"amount":1},{"description":"oz","gramWeight":28.35,"amount":1}],
+    defaultServing: '1 fillet (~6 oz)'
   },
   'salsa': {
     fdcId: 174524,
