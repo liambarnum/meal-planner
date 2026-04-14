@@ -501,6 +501,55 @@ const STATIC_NUTRITION = {
     nutrients: {"protein":12.45,"totalFat":3.5,"totalCarbs":42.71,"calories":252,"dietaryFiber":6,"calcium":161,"iron":2.47,"potassium":254,"sodium":455,"vitaminD":0,"cholesterol":0,"transFat":0.02,"saturatedFat":0.722,"totalSugars":4.34},
     portions: [{"description":"oz","gramWeight":28.35,"amount":1},{"description":"slice","gramWeight":43,"amount":1}],
     defaultServing: '1 slice'
+  },
+  'potatoes': {
+    fdcId: 170026,
+    description: "Potatoes, flesh and skin, raw",
+    nutrients: {"protein":2.05,"totalFat":0.09,"totalCarbs":17.49,"calories":77,"dietaryFiber":2.1,"calcium":12,"iron":0.81,"potassium":425,"sodium":6,"vitaminD":0,"cholesterol":0,"transFat":0,"saturatedFat":0.025,"totalSugars":0.82},
+    portions: [{"description":"small (1.75\" dia)","gramWeight":170,"amount":1},{"description":"medium (2.25\" dia)","gramWeight":213,"amount":1},{"description":"large (3\" dia)","gramWeight":369,"amount":1},{"description":"cup, diced","gramWeight":150,"amount":1}],
+    defaultServing: '1 medium (2.25" dia)'
+  },
+  'boneless skinless chicken thighs': {
+    fdcId: 171474,
+    description: "Chicken, thigh, meat only, raw",
+    nutrients: {"protein":19.64,"totalFat":3.91,"totalCarbs":0,"calories":119,"dietaryFiber":0,"calcium":7,"iron":0.73,"potassium":271,"sodium":86,"vitaminD":0.1,"cholesterol":94,"transFat":0.02,"saturatedFat":0.98,"totalSugars":0},
+    portions: [{"description":"thigh","gramWeight":116,"amount":1},{"description":"oz","gramWeight":28.35,"amount":1}],
+    defaultServing: '1 thigh'
+  },
+  'white rice': {
+    fdcId: 169756,
+    description: "Rice, white, long-grain, regular, raw, unenriched",
+    nutrients: {"protein":7.13,"totalFat":0.66,"totalCarbs":79.95,"calories":365,"dietaryFiber":1.3,"calcium":28,"iron":0.8,"potassium":115,"sodium":5,"vitaminD":0,"cholesterol":0,"transFat":0,"saturatedFat":0.18,"totalSugars":0.12},
+    portions: [{"description":"cup, dry","gramWeight":185,"amount":1},{"description":"cup, cooked","gramWeight":158,"amount":1}],
+    defaultServing: '1 cup, cooked'
+  },
+  '90/10 ground beef': {
+    fdcId: 174036,
+    description: "Beef, ground, 90% lean meat / 10% fat, raw",
+    nutrients: {"protein":20.0,"totalFat":10.0,"totalCarbs":0,"calories":176,"dietaryFiber":0,"calcium":18,"iron":2.24,"potassium":315,"sodium":66,"vitaminD":0.1,"cholesterol":65,"transFat":0.42,"saturatedFat":3.88,"totalSugars":0},
+    portions: [{"description":"oz","gramWeight":28.35,"amount":1},{"description":"patty (4 oz)","gramWeight":113,"amount":1}],
+    defaultServing: '4 oz'
+  },
+  'canned diced tomatoes': {
+    fdcId: 170458,
+    description: "Tomatoes, canned, diced, red, ripe",
+    nutrients: {"protein":0.78,"totalFat":0.11,"totalCarbs":3.72,"calories":17,"dietaryFiber":0.9,"calcium":31,"iron":0.97,"potassium":188,"sodium":143,"vitaminD":0,"cholesterol":0,"transFat":0,"saturatedFat":0.015,"totalSugars":2.38},
+    portions: [{"description":"cup","gramWeight":240,"amount":1},{"description":"oz","gramWeight":28.35,"amount":1}],
+    defaultServing: '1 cup'
+  },
+  'yellow onion': {
+    fdcId: 170000,
+    description: "Onions, raw",
+    nutrients: {"protein":1.1,"totalFat":0.1,"totalCarbs":9.34,"calories":40,"dietaryFiber":1.7,"calcium":23,"iron":0.21,"potassium":146,"sodium":4,"vitaminD":0,"cholesterol":0,"transFat":0,"saturatedFat":0.042,"totalSugars":4.24},
+    portions: [{"description":"cup, chopped","gramWeight":160,"amount":1},{"description":"medium (2.5\" dia)","gramWeight":110,"amount":1},{"description":"slice, thin","gramWeight":9,"amount":1}],
+    defaultServing: '1 medium (2.5" dia)'
+  },
+  'chicken broth': {
+    fdcId: 172401,
+    description: "Soup, chicken broth, ready-to-serve",
+    nutrients: {"protein":0.49,"totalFat":0.21,"totalCarbs":0.11,"calories":4,"dietaryFiber":0,"calcium":3,"iron":0.06,"potassium":26,"sodium":343,"vitaminD":0,"cholesterol":0,"transFat":0,"saturatedFat":0.06,"totalSugars":0.08},
+    portions: [{"description":"cup","gramWeight":244,"amount":1},{"description":"can (14.5 oz)","gramWeight":411,"amount":1}],
+    defaultServing: '1 cup'
   }
 };
 
