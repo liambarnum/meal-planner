@@ -105,8 +105,8 @@ const STATIC_NUTRITION = {
   },
   'bone broth': {
     fdcId: 172884,
-    description: "Soup, stock, chicken, home-prepared",
-    nutrients: {"protein":2.52,"totalFat":1.2,"totalCarbs":3.53,"calories":36,"dietaryFiber":0,"calcium":3,"iron":0.21,"potassium":105,"sodium":143,"vitaminD":0,"cholesterol":3,"transFat":0,"saturatedFat":0.321,"totalSugars":1.58},
+    description: "Bone broth, chicken (commercial, typical values)",
+    nutrients: {"protein":3.75,"totalFat":0.4,"totalCarbs":0.4,"calories":19,"dietaryFiber":0,"calcium":6,"iron":0.1,"potassium":80,"sodium":240,"vitaminD":0,"cholesterol":2,"transFat":0,"saturatedFat":0.1,"totalSugars":0.4},
     portions: [{"description":"cup","gramWeight":240,"amount":1}],
     defaultServing: '1 cup'
   },
