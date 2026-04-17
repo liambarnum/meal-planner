@@ -643,6 +643,46 @@ function getAmountStep(unit) {
   return 1;
 }
 
+// Parse a user-entered quantity that may be a decimal ("1.5"), a simple
+// fraction ("2/3"), a unicode fraction ("½"), or a mixed number ("1 1/2").
+// Returns a Number, or NaN if unparseable.
+function parseQuantityInput(str) {
+  if (str === null || str === undefined) return NaN;
+  const s = String(str).trim();
+  if (!s) return NaN;
+  const parts = s.split(/\s+/);
+  let total = 0;
+  for (const p of parts) {
+    const v = parseFractionStrict(p);
+    if (isNaN(v)) return NaN;
+    total += v;
+  }
+  return total;
+}
+
+function parseFractionStrict(str) {
+  const unicodeFractions = { '¼': 0.25, '½': 0.5, '¾': 0.75, '⅓': 1/3, '⅔': 2/3, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875 };
+  if (unicodeFractions[str] !== undefined) return unicodeFractions[str];
+  for (const [ch, val] of Object.entries(unicodeFractions)) {
+    if (str.includes(ch)) {
+      const rest = str.replace(ch, '').trim();
+      if (!rest) return val;
+      const n = parseFloat(rest);
+      return isNaN(n) ? NaN : n + val;
+    }
+  }
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length !== 2) return NaN;
+    const num = parseFloat(parts[0]);
+    const den = parseFloat(parts[1]);
+    if (isNaN(num) || isNaN(den) || den === 0) return NaN;
+    return num / den;
+  }
+  const n = parseFloat(str);
+  return isNaN(n) ? NaN : n;
+}
+
 function parseAmount(amountStr) {
   if (!amountStr) return { quantity: 1, unit: '' };
   const str = amountStr.trim().toLowerCase();
@@ -1049,7 +1089,7 @@ function renderServingEditableLabel(container, ing) {
   const inner = container.querySelector('#nf-serving-label-inner');
 
   const rerender = () => {
-    const qty = parseFloat(amt.value);
+    const qty = parseQuantityInput(amt.value);
     if (isNaN(qty) || qty < 0) return;
     const unit = unitSel.value || '';
     const newAmount = unit ? `${qty} ${unit}`.trim() : `${qty}`;
@@ -1060,8 +1100,8 @@ function renderServingEditableLabel(container, ing) {
 
   const stepBy = (delta) => {
     const step = getAmountStep(unitSel.value);
-    const cur = parseFloat(amt.value) || 0;
-    let next = cur + delta * step;
+    const cur = parseQuantityInput(amt.value);
+    let next = (isNaN(cur) ? 0 : cur) + delta * step;
     if (next < 0) next = 0;
     amt.value = String(Math.round(next * 1000) / 1000);
     rerender();
@@ -1070,6 +1110,10 @@ function renderServingEditableLabel(container, ing) {
   container.querySelector('#nf-serving-up').addEventListener('click', () => stepBy(1));
   container.querySelector('#nf-serving-down').addEventListener('click', () => stepBy(-1));
   amt.addEventListener('input', rerender);
+  amt.addEventListener('blur', () => {
+    const qty = parseQuantityInput(amt.value);
+    if (!isNaN(qty)) amt.value = String(Math.round(qty * 1000) / 1000);
+  });
   unitSel.addEventListener('change', rerender);
 
   rerender();
