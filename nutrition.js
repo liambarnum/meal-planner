@@ -554,8 +554,24 @@ const STATIC_NUTRITION = {
 };
 
 function getDefaultServing(name) {
+  const custom = getCustomServings()[name.toLowerCase()];
+  if (custom) return custom;
   const entry = getIngredientEntry(name);
   return (entry && entry.defaultServing) ? entry.defaultServing : '100 g';
+}
+
+function getCustomServings() {
+  try {
+    return JSON.parse(localStorage.getItem('customServings') || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveCustomServing(name, amountStr) {
+  const all = getCustomServings();
+  all[name.toLowerCase()] = amountStr;
+  localStorage.setItem('customServings', JSON.stringify(all));
 }
 
 // ─── PORTION PARSING ───
@@ -962,15 +978,23 @@ const NF_EDIT_FIELDS = [
 function renderNutritionEditForm(ing) {
   const entry = getIngredientEntry(ing.name);
   const nutrients = entry ? { ...entry.nutrients } : {};
-  const rows = NF_EDIT_FIELDS.map(f => `
+  // Scale to the currently-selected serving size
+  const servingGrams = getServingGrams(ing);
+  const scale = servingGrams / 100;
+  const rows = NF_EDIT_FIELDS.map(f => {
+    const raw = nutrients[f.key];
+    const scaled = (raw !== undefined && raw !== null) ? Math.round(raw * scale * 100) / 100 : '';
+    return `
     <div class="nf-edit-row">
       <label class="nf-edit-label" for="nf-edit-${f.key}">${f.label} <span class="nf-edit-unit">(${f.unit})</span></label>
-      <input class="nf-edit-input" type="number" step="0.01" min="0" id="nf-edit-${f.key}" data-field="${f.key}" value="${nutrients[f.key] !== undefined ? nutrients[f.key] : ''}">
+      <input class="nf-edit-input" type="number" step="0.01" min="0" id="nf-edit-${f.key}" data-field="${f.key}" value="${scaled}">
     </div>
-  `).join('');
+  `;
+  }).join('');
   return `
     <div class="nf-edit-form">
-      <p class="nf-edit-desc">Values are per 100g of ingredient.</p>
+      <p class="nf-edit-desc">Values are per <strong>${ing.amount}</strong> (${Math.round(servingGrams)}g).</p>
+      <input type="hidden" id="nf-edit-serving-grams" value="${servingGrams}">
       <div class="nf-edit-grid">${rows}</div>
       <div class="nf-edit-actions">
         <button class="btn btn-primary" id="nf-edit-save">Save</button>
@@ -978,6 +1002,14 @@ function renderNutritionEditForm(ing) {
       </div>
     </div>
   `;
+}
+
+function getServingGrams(ing) {
+  const entry = getIngredientEntry(ing.name);
+  const portions = (entry && entry.portions) || [{ description: '100g', gramWeight: 100, amount: 1 }];
+  const parsed = parseAmount(ing.amount || '100 g');
+  const { grams } = convertToGrams(parsed, portions);
+  return grams || 100;
 }
 
 function openNutritionModal(meal) {
@@ -1096,6 +1128,7 @@ function renderServingEditableLabel(container, ing) {
     const newAmount = unit ? `${qty} ${unit}`.trim() : `${qty}`;
     ing.amount = newAmount;
     _nutritionModalIngredient = ing;
+    saveCustomServing(ing.name, newAmount);
     inner.innerHTML = renderIngredientNutritionLabel(ing);
   };
 

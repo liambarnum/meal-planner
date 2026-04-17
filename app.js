@@ -1173,14 +1173,19 @@ function bindNutritionModal() {
     if (e.target.id === 'nf-edit-save') {
       const ing = getCurrentNutritionIngredient();
       if (!ing) return;
+      const servingGramsEl = document.getElementById('nf-edit-serving-grams');
+      const servingGrams = servingGramsEl ? parseFloat(servingGramsEl.value) : 100;
+      const scale = (servingGrams && servingGrams > 0) ? (100 / servingGrams) : 1;
       const nutrients = {};
       document.querySelectorAll('.nf-edit-input').forEach(input => {
-        nutrients[input.dataset.field] = parseFloat(input.value) || 0;
+        const entered = parseFloat(input.value) || 0;
+        // Back-scale to per-100g for storage
+        nutrients[input.dataset.field] = Math.round(entered * scale * 1000) / 1000;
       });
-      saveNutritionOverride(ing.name, {
-        nutrients,
-        portions: [{ description: '100g', gramWeight: 100, amount: 1 }]
-      });
+      // Preserve existing portions so volume/size units still convert correctly
+      const existing = getIngredientEntry(ing.name);
+      const portions = (existing && existing.portions) || [{ description: '100g', gramWeight: 100, amount: 1 }];
+      saveNutritionOverride(ing.name, { nutrients, portions });
       document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
       updateNfStatus();
     }
