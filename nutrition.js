@@ -1066,8 +1066,12 @@ function renderNoNutritionView(ing) {
   `;
 }
 
+let _nutritionServingEditable = false;
+function isServingEditableMode() { return _nutritionServingEditable; }
+
 function openIngredientNutritionModal(ing, noDataMode = false, servingEditable = false) {
   _nutritionModalIngredient = ing;
+  _nutritionServingEditable = !!servingEditable;
   const editBtn = document.getElementById('nf-edit-btn');
   const container = document.getElementById('nutrition-label-container');
   document.getElementById('nutrition-modal-meal-name').textContent = ing.name;
@@ -1153,7 +1157,10 @@ function renderServingEditableLabel(container, ing) {
   rerender();
 }
 
+function clearServingEditableMode() { _nutritionServingEditable = false; }
+
 function closeNutritionModal() {
+  _nutritionServingEditable = false;
   document.getElementById('nutrition-overlay').classList.remove('open');
 }
 

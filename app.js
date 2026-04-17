@@ -1166,6 +1166,14 @@ function bindNutritionModal() {
   document.getElementById('nf-edit-btn').addEventListener('click', () => {
     const ing = getCurrentNutritionIngredient();
     if (!ing) return;
+    if (isServingEditableMode()) {
+      // Keep the serving editor visible; only swap the inner label for the edit form
+      const inner = document.getElementById('nf-serving-label-inner');
+      if (inner) {
+        inner.innerHTML = renderNutritionEditForm(ing);
+        return;
+      }
+    }
     document.getElementById('nutrition-label-container').innerHTML = renderNutritionEditForm(ing);
   });
 
@@ -1186,13 +1194,25 @@ function bindNutritionModal() {
       const existing = getIngredientEntry(ing.name);
       const portions = (existing && existing.portions) || [{ description: '100g', gramWeight: 100, amount: 1 }];
       saveNutritionOverride(ing.name, { nutrients, portions });
-      document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+      if (isServingEditableMode()) {
+        const inner = document.getElementById('nf-serving-label-inner');
+        if (inner) inner.innerHTML = renderIngredientNutritionLabel(ing);
+        else document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+      } else {
+        document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+      }
       updateNfStatus();
     }
     if (e.target.id === 'nf-edit-cancel') {
       const ing = getCurrentNutritionIngredient();
       if (!ing) return;
-      document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+      if (isServingEditableMode()) {
+        const inner = document.getElementById('nf-serving-label-inner');
+        if (inner) inner.innerHTML = renderIngredientNutritionLabel(ing);
+        else document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+      } else {
+        document.getElementById('nutrition-label-container').innerHTML = renderIngredientNutritionLabel(ing);
+      }
     }
   });
 }
