@@ -580,6 +580,69 @@ function parseFraction(str) {
   return isNaN(n) ? 1 : n;
 }
 
+// Ingredient-category overrides for unit dropdown options.
+// When an ingredient name matches (substring, lowercase), these units are offered
+// in addition to its USDA portions. Purely additive — does not change defaults.
+const INGREDIENT_UNIT_OVERRIDES = [
+  { match: ['sugar', 'flour', 'oats', 'rice', 'salt', 'honey', 'syrup', 'cocoa', 'powder'], units: ['tsp', 'tbsp', 'cup', 'g', 'oz'] },
+  { match: ['oil', 'vinegar', 'sauce', 'juice', 'milk', 'cream', 'yogurt', 'broth', 'stock', 'water'], units: ['tsp', 'tbsp', 'cup', 'ml', 'oz'] },
+  { match: ['butter', 'cheese', 'peanut butter', 'almond butter'], units: ['tsp', 'tbsp', 'cup', 'g', 'oz'] },
+  { match: ['chicken', 'beef', 'pork', 'turkey', 'salmon', 'tuna', 'shrimp', 'fish', 'tofu'], units: ['oz', 'lb', 'g'] },
+  { match: ['egg'], units: ['piece', 'large', 'medium', 'g'] }
+];
+
+function getUnitOptionsFor(ingredientName, currentUnit) {
+  const lower = (ingredientName || '').toLowerCase();
+  const units = new Set();
+  if (currentUnit) units.add(currentUnit);
+
+  // From USDA portions
+  const key = findNutritionKey(lower);
+  if (key && STATIC_NUTRITION[key] && STATIC_NUTRITION[key].portions) {
+    STATIC_NUTRITION[key].portions.forEach(p => {
+      const desc = (p.description || '').toLowerCase().trim();
+      // Strip parenthetical size like "medium (3\" dia)" → "medium"
+      const simple = desc.replace(/\s*\(.*\)\s*/, '').trim();
+      if (simple) units.add(simple);
+    });
+  }
+
+  // From hardcoded overrides
+  for (const rule of INGREDIENT_UNIT_OVERRIDES) {
+    if (rule.match.some(m => lower.includes(m))) {
+      rule.units.forEach(u => units.add(u));
+      break;
+    }
+  }
+
+  // Always include gram and oz as universal fallbacks
+  units.add('g');
+  units.add('oz');
+
+  return [...units].filter(Boolean);
+}
+
+function findNutritionKey(lowerName) {
+  if (STATIC_NUTRITION[lowerName]) return lowerName;
+  for (const key of Object.keys(STATIC_NUTRITION)) {
+    if (lowerName.includes(key) || key.includes(lowerName)) return key;
+  }
+  return null;
+}
+
+// Step size for the amount stepper based on unit
+function getAmountStep(unit) {
+  const u = (unit || '').toLowerCase().trim();
+  if (['g', 'gram', 'grams', 'ml', 'milliliter', 'milliliters'].includes(u)) return 10;
+  if (['kg', 'kilogram', 'l', 'liter', 'liters'].includes(u)) return 0.1;
+  if (['cup', 'cups'].includes(u)) return 0.25;
+  if (['tbsp', 'tablespoon', 'tablespoons'].includes(u)) return 1;
+  if (['tsp', 'teaspoon', 'teaspoons'].includes(u)) return 0.5;
+  if (['oz', 'ounce', 'ounces'].includes(u)) return 0.5;
+  if (['lb', 'lbs', 'pound', 'pounds'].includes(u)) return 0.25;
+  return 1;
+}
+
 function parseAmount(amountStr) {
   if (!amountStr) return { quantity: 1, unit: '' };
   const str = amountStr.trim().toLowerCase();

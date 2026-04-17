@@ -25,7 +25,9 @@ let state = {
   calorieTarget: null,       // number or null
   macroProportion: { protein: 'M', carbs: 'M', fats: 'M' },
   categoryRanges: null,      // { Breakfast: { protein:[lo,hi], ... }, ... } or null
-  macroRationale: ''         // brief string from AI explaining the targets
+  macroRationale: '',        // brief string from AI explaining the targets
+  mealEdits: {},             // { mealId: { ingredientName: "1.5 cup" } } — persistent per-meal amount edits
+  assignmentOverrides: {}    // { "YYYY-MM-DD-Slot": { ingredientName: "1.5 cup" } } — per-day ingredient overrides
 };
 
 /* ─── DATE HELPERS ─── */
@@ -86,6 +88,7 @@ function init() {
   bindNutritionModal();
   bindNutritionDelegation();
   bindDeleteModal();
+  bindIngredientEditModal();
   registerSW();
 }
 
@@ -112,6 +115,8 @@ function loadState() {
       if (parsed.macroProportion) state.macroProportion = parsed.macroProportion;
       state.categoryRanges = parsed.categoryRanges || null;
       state.macroRationale = parsed.macroRationale || '';
+      state.mealEdits = parsed.mealEdits || {};
+      state.assignmentOverrides = parsed.assignmentOverrides || {};
     }
   } catch (e) { /* start fresh */ }
 }
@@ -155,12 +160,29 @@ function saveState() {
     calorieTarget: state.calorieTarget,
     macroProportion: state.macroProportion,
     categoryRanges: state.categoryRanges,
-    macroRationale: state.macroRationale
+    macroRationale: state.macroRationale,
+    mealEdits: state.mealEdits,
+    assignmentOverrides: state.assignmentOverrides
   }));
 }
 
 function getMeal(id) {
   return state.masterMeals.find(m => m.id === id);
+}
+
+// Returns a shallow-cloned meal with ingredient amounts resolved through
+// mealEdits (global) and, if assignmentKey is provided, assignmentOverrides (per-slot).
+function getEffectiveMeal(mealId, assignmentKey) {
+  const base = getMeal(mealId);
+  if (!base) return null;
+  const edits = state.mealEdits[mealId] || {};
+  const overrides = assignmentKey ? (state.assignmentOverrides[assignmentKey] || {}) : {};
+  const ingredients = base.ingredients.map(ing => {
+    if (overrides[ing.name] !== undefined) return { ...ing, amount: overrides[ing.name] };
+    if (edits[ing.name] !== undefined) return { ...ing, amount: edits[ing.name] };
+    return ing;
+  });
+  return { ...base, ingredients };
 }
 
 // Returns macros computed from ingredient-level USDA data.
@@ -410,7 +432,9 @@ function renderAllMeals(container, expandCategory) {
   });
 }
 
-function renderIngredientsList(meal) {
+function renderIngredientsList(meal, context) {
+  const ctx = context || {};
+  const assignAttr = ctx.assignmentKey ? ` data-assignment-key="${esc(ctx.assignmentKey)}"` : '';
   return `
     <div class="ingredients-toggle">
       <button class="ingredients-toggle-btn">
@@ -421,15 +445,16 @@ function renderIngredientsList(meal) {
       ${(meal.ingredients || []).map(ing => {
         const isSeasoning = ing.section === 'Seasonings';
         const has = !isSeasoning && hasNutritionData(ing.name);
-        const badge = isSeasoning ? ''
+        const nfBadge = isSeasoning ? ''
           : has
             ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="View Nutrition Facts">NF</button>`
             : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="No nutritional data currently linked with ingredient.">&#9888;</button>`;
+        const editBadge = `<button class="ingredient-edit-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="Edit amount">&#9998;</button>`;
         return `
         <div class="ingredient-row">
           <span class="ingredient-amount">${esc(ing.amount)}</span>
           <span class="ingredient-info">
-            <span class="ingredient-name">${esc(ing.name)} ${badge}</span>
+            <span class="ingredient-name">${esc(ing.name)} ${nfBadge}${editBadge}</span>
             ${ing.detail ? `<span class="ingredient-detail">${esc(ing.detail)}</span>` : ''}
           </span>
         </div>`;
@@ -484,11 +509,25 @@ function bindIngredientsToggle(el) {
       }
     });
   });
+
+  // Bind edit badges
+  el.querySelectorAll('.ingredient-edit-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      openIngredientEditModal(
+        badge.dataset.mealId,
+        badge.dataset.ingredient,
+        badge.dataset.assignmentKey || null
+      );
+    });
+  });
 }
 
 function createMealCard(meal) {
   const card = document.createElement('div');
   card.className = 'meal-card';
+  const effective = getEffectiveMeal(meal.id) || meal;
   card.innerHTML = `
     <div class="meal-card-top">
       <div>
@@ -504,11 +543,11 @@ function createMealCard(meal) {
     </div>
     <div class="meal-card-actions">
       <div class="macro-badge">
-        ${(() => { const m = getEffectiveMacros(meal); return `<span class="calories">${getMealCalories(m)} kcal</span><span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
+        ${(() => { const m = getEffectiveMacros(effective); return `<span class="calories">${getMealCalories(m)} kcal</span><span>F: ${m.fats}g</span><span>C: ${m.carbs}g</span><span class="fiber">Fb: ${m.fiber}g</span><span>P: ${m.protein}g</span>`; })()}
       </div>
       <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
     </div>
-    ${renderIngredientsList(meal)}
+    ${renderIngredientsList(effective, { mealId: meal.id })}
   `;
   bindIngredientsToggle(card);
   card.addEventListener('click', (e) => {
@@ -527,7 +566,7 @@ function renderDayView(container, dateISO) {
   const totals = { fats: 0, carbs: 0, fiber: 0, protein: 0 };
   SLOTS.forEach(slot => {
     const key = `${dateISO}-${slot}`;
-    const meal = getMeal(state.assignments[key]);
+    const meal = getEffectiveMeal(state.assignments[key], key);
     if (meal) {
       const m = getEffectiveMacros(meal);
       totals.fats += m.fats;
@@ -572,7 +611,7 @@ function renderDayView(container, dateISO) {
   SLOTS.forEach(slot => {
     const key = `${dateISO}-${slot}`;
     const mealId = state.assignments[key];
-    const meal = getMeal(mealId);
+    const meal = getEffectiveMeal(mealId, key);
     const slotEl = document.createElement('div');
     slotEl.className = 'meal-slot';
     slotEl.dataset.slot = slot;
@@ -589,7 +628,7 @@ function renderDayView(container, dateISO) {
             </div>
             <button class="nutrition-badge" data-meal-id="${esc(meal.id)}" title="View Nutrition Facts">NF</button>
           </div>
-          ${renderIngredientsList(meal)}
+          ${renderIngredientsList(meal, { mealId: meal.id, assignmentKey: key })}
           <button class="slot-remove" title="Remove meal">&times;</button>
         </div>
       `;
@@ -597,6 +636,7 @@ function renderDayView(container, dateISO) {
       slotEl.querySelector('.slot-remove').addEventListener('click', (e) => {
         e.stopPropagation();
         delete state.assignments[key];
+        delete state.assignmentOverrides[key];
         saveState();
         renderDayTabs();
         renderPlanner();
@@ -632,7 +672,9 @@ function bindModal() {
     const dateISO = document.getElementById('modal-day').value;
     const slot = document.getElementById('modal-slot').value;
     if (modalMealId && dateISO) {
-      state.assignments[`${dateISO}-${slot}`] = modalMealId;
+      const assignKey = `${dateISO}-${slot}`;
+      if (state.assignments[assignKey] !== modalMealId) delete state.assignmentOverrides[assignKey];
+      state.assignments[assignKey] = modalMealId;
       saveState();
       state.currentDay = dateISO;
       renderDayTabs();
@@ -1175,7 +1217,8 @@ function bindNutritionDelegation() {
       if (!dateISO) return;
       const dayMeals = [];
       SLOTS.forEach(slot => {
-        const meal = getMeal(state.assignments[`${dateISO}-${slot}`]);
+        const key = `${dateISO}-${slot}`;
+        const meal = getEffectiveMeal(state.assignments[key], key);
         if (meal) dayMeals.push(meal);
       });
       openDayNutritionModal(dayMeals, formatDateFull(dateISO));
@@ -1931,6 +1974,136 @@ function esc(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/* ─── INGREDIENT EDIT MODAL ─── */
+let ingEditCtx = null; // { mealId, ingredientName, assignmentKey, originalAmount }
+
+function openIngredientEditModal(mealId, ingredientName, assignmentKey) {
+  const effective = getEffectiveMeal(mealId, assignmentKey);
+  if (!effective) return;
+  const ing = effective.ingredients.find(i => i.name === ingredientName);
+  if (!ing) return;
+
+  const parsed = parseAmount(ing.amount);
+  const units = getUnitOptionsFor(ingredientName, parsed.unit);
+
+  ingEditCtx = { mealId, ingredientName, assignmentKey: assignmentKey || null, originalAmount: ing.amount };
+
+  document.getElementById('ing-edit-name').textContent = ingredientName;
+  const amtInput = document.getElementById('ing-edit-amount');
+  amtInput.value = String(parsed.quantity);
+  const unitSel = document.getElementById('ing-edit-unit');
+  unitSel.innerHTML = units.map(u => `<option value="${esc(u)}"${u === parsed.unit ? ' selected' : ''}>${esc(u || '—')}</option>`).join('');
+
+  document.getElementById('ing-edit-overlay').classList.add('open');
+}
+
+function closeIngredientEditModal() {
+  document.getElementById('ing-edit-overlay').classList.remove('open');
+  ingEditCtx = null;
+}
+
+function bindIngredientEditModal() {
+  const amt = document.getElementById('ing-edit-amount');
+  const unitSel = document.getElementById('ing-edit-unit');
+
+  const stepBy = (delta) => {
+    const unit = unitSel.value;
+    const step = getAmountStep(unit);
+    const cur = parseFloat(amt.value) || 0;
+    let next = cur + delta * step;
+    if (next < 0) next = 0;
+    // round to avoid floating point crud
+    next = Math.round(next * 1000) / 1000;
+    amt.value = String(next);
+  };
+
+  document.getElementById('ing-edit-up').addEventListener('click', () => stepBy(1));
+  document.getElementById('ing-edit-down').addEventListener('click', () => stepBy(-1));
+  document.getElementById('ing-edit-cancel').addEventListener('click', closeIngredientEditModal);
+  document.getElementById('ing-edit-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeIngredientEditModal();
+  });
+
+  document.getElementById('ing-edit-save').addEventListener('click', () => {
+    if (!ingEditCtx) return;
+    const qty = parseFloat(amt.value);
+    if (isNaN(qty) || qty < 0) return;
+    const unit = unitSel.value || '';
+    const newAmount = unit ? `${qty} ${unit}`.trim() : `${qty}`;
+
+    const { mealId, ingredientName, assignmentKey } = ingEditCtx;
+
+    if (assignmentKey) {
+      // Per-day override only
+      if (!state.assignmentOverrides[assignmentKey]) state.assignmentOverrides[assignmentKey] = {};
+      state.assignmentOverrides[assignmentKey][ingredientName] = newAmount;
+      saveState();
+      closeIngredientEditModal();
+      renderPlanner();
+      return;
+    }
+
+    // All-tab edit: ask scope if any existing assignments reference this meal
+    const existingKeys = Object.keys(state.assignments).filter(k => state.assignments[k] === mealId);
+    if (existingKeys.length === 0) {
+      applyMealEdit(mealId, ingredientName, newAmount, 'retro');
+      closeIngredientEditModal();
+      renderPlanner();
+      return;
+    }
+
+    // Open scope modal; defer write until user picks
+    pendingMealEdit = { mealId, ingredientName, newAmount, existingKeys };
+    document.getElementById('ing-scope-overlay').classList.add('open');
+  });
+
+  // Scope modal buttons
+  document.getElementById('ing-scope-cancel').addEventListener('click', closeScopeModal);
+  document.getElementById('ing-scope-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeScopeModal();
+  });
+  document.getElementById('ing-scope-retro').addEventListener('click', () => {
+    if (!pendingMealEdit) return;
+    const { mealId, ingredientName, newAmount } = pendingMealEdit;
+    applyMealEdit(mealId, ingredientName, newAmount, 'retro');
+    closeScopeModal();
+    closeIngredientEditModal();
+    renderPlanner();
+  });
+  document.getElementById('ing-scope-forward').addEventListener('click', () => {
+    if (!pendingMealEdit) return;
+    const { mealId, ingredientName, newAmount, existingKeys } = pendingMealEdit;
+    applyMealEdit(mealId, ingredientName, newAmount, 'forward', existingKeys);
+    closeScopeModal();
+    closeIngredientEditModal();
+    renderPlanner();
+  });
+}
+
+let pendingMealEdit = null;
+
+function closeScopeModal() {
+  document.getElementById('ing-scope-overlay').classList.remove('open');
+  pendingMealEdit = null;
+}
+
+function applyMealEdit(mealId, ingredientName, newAmount, mode, existingKeys) {
+  if (mode === 'forward' && existingKeys) {
+    // Snapshot currently-effective amount for each existing assignment that lacks an override for this ingredient
+    for (const key of existingKeys) {
+      if (!state.assignmentOverrides[key]) state.assignmentOverrides[key] = {};
+      if (state.assignmentOverrides[key][ingredientName] === undefined) {
+        const eff = getEffectiveMeal(mealId, key);
+        const ing = eff && eff.ingredients.find(i => i.name === ingredientName);
+        if (ing) state.assignmentOverrides[key][ingredientName] = ing.amount;
+      }
+    }
+  }
+  if (!state.mealEdits[mealId]) state.mealEdits[mealId] = {};
+  state.mealEdits[mealId][ingredientName] = newAmount;
+  saveState();
 }
 
 /* ─── START ─── */

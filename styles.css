@@ -993,6 +993,75 @@ body {
   border-color: #e6a817;
   background: rgba(230, 168, 23, 0.1);
 }
+.ingredient-edit-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 1px 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  vertical-align: middle;
+  line-height: 1.2;
+}
+.ingredient-edit-badge:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+.ing-edit-name {
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+.amount-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.stepper-btn {
+  width: 36px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.stepper-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.stepper-input {
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: 6px 10px;
+}
+.stepper-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.modal-actions-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+.modal-actions-stack .btn {
+  width: 100%;
+}
 .chip-no-nutrition {
   color: #e6a817;
   font-size: 0.85em;

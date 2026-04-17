@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
 
@@ -360,6 +360,39 @@
     </div>
   </div>
 
+  <!-- Ingredient Edit Modal -->
+  <div class="modal-overlay" id="ing-edit-overlay">
+    <div class="modal">
+      <div class="modal-title">Edit Ingredient</div>
+      <div class="ing-edit-name" id="ing-edit-name"></div>
+      <label>Amount</label>
+      <div class="amount-stepper">
+        <button type="button" class="stepper-btn" id="ing-edit-down">&minus;</button>
+        <input type="text" id="ing-edit-amount" class="stepper-input" inputmode="decimal">
+        <button type="button" class="stepper-btn" id="ing-edit-up">+</button>
+      </div>
+      <label for="ing-edit-unit">Unit</label>
+      <select id="ing-edit-unit"></select>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="ing-edit-save">Save</button>
+        <button class="btn btn-secondary" id="ing-edit-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Scope Confirm Modal -->
+  <div class="modal-overlay" id="ing-scope-overlay">
+    <div class="modal">
+      <div class="modal-title">Apply to existing assignments?</div>
+      <p class="clear-desc">This meal is already assigned to one or more days. Do you want those existing assignments to reflect this change?</p>
+      <div class="modal-actions modal-actions-stack">
+        <button class="btn btn-primary" id="ing-scope-retro">Apply retroactively</button>
+        <button class="btn btn-secondary" id="ing-scope-forward">Going forward only</button>
+        <button class="btn btn-secondary" id="ing-scope-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI Chat FAB -->
   <button class="chat-fab" id="chat-fab" title="AI Assistant">&#9830;</button>
 
@@ -380,7 +413,7 @@
   </div>
 
   <script src="meals.js?v=10"></script>
-  <script src="nutrition.js?v=10"></script>
-  <script src="app.js?v=11"></script>
+  <script src="nutrition.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
