@@ -994,7 +994,7 @@ function renderNoNutritionView(ing) {
   `;
 }
 
-function openIngredientNutritionModal(ing, noDataMode = false) {
+function openIngredientNutritionModal(ing, noDataMode = false, servingEditable = false) {
   _nutritionModalIngredient = ing;
   const editBtn = document.getElementById('nf-edit-btn');
   const container = document.getElementById('nutrition-label-container');
@@ -1004,7 +1004,6 @@ function openIngredientNutritionModal(ing, noDataMode = false) {
   const hasEntry = !!getIngredientEntry(ing.name);
 
   if (noDataMode && !hasEntry) {
-    // Show explanation first; "Enter manually" button wires up below
     if (editBtn) editBtn.style.display = 'none';
     container.innerHTML = renderNoNutritionView(ing);
     const manualBtn = container.querySelector('.nf-enter-manual-btn');
@@ -1019,8 +1018,61 @@ function openIngredientNutritionModal(ing, noDataMode = false) {
     container.innerHTML = renderNutritionEditForm(ing);
   } else {
     if (editBtn) editBtn.style.display = '';
-    container.innerHTML = renderIngredientNutritionLabel(ing);
+    if (servingEditable) {
+      renderServingEditableLabel(container, ing);
+    } else {
+      container.innerHTML = renderIngredientNutritionLabel(ing);
+    }
   }
+}
+
+function renderServingEditableLabel(container, ing) {
+  const parsed = parseAmount(ing.amount);
+  const units = getUnitOptionsFor(ing.name, parsed.unit);
+  const unitOpts = units.map(u => `<option value="${u}"${u === parsed.unit ? ' selected' : ''}>${u || '—'}</option>`).join('');
+
+  container.innerHTML = `
+    <div class="nf-serving-editor">
+      <label class="nf-serving-label">Serving size</label>
+      <div class="amount-stepper nf-serving-stepper">
+        <button type="button" class="stepper-btn" id="nf-serving-down">&minus;</button>
+        <input type="text" id="nf-serving-amount" class="stepper-input" inputmode="decimal" value="${parsed.quantity}">
+        <button type="button" class="stepper-btn" id="nf-serving-up">+</button>
+        <select id="nf-serving-unit" class="nf-serving-unit">${unitOpts}</select>
+      </div>
+    </div>
+    <div id="nf-serving-label-inner"></div>
+  `;
+
+  const amt = container.querySelector('#nf-serving-amount');
+  const unitSel = container.querySelector('#nf-serving-unit');
+  const inner = container.querySelector('#nf-serving-label-inner');
+
+  const rerender = () => {
+    const qty = parseFloat(amt.value);
+    if (isNaN(qty) || qty < 0) return;
+    const unit = unitSel.value || '';
+    const newAmount = unit ? `${qty} ${unit}`.trim() : `${qty}`;
+    ing.amount = newAmount;
+    _nutritionModalIngredient = ing;
+    inner.innerHTML = renderIngredientNutritionLabel(ing);
+  };
+
+  const stepBy = (delta) => {
+    const step = getAmountStep(unitSel.value);
+    const cur = parseFloat(amt.value) || 0;
+    let next = cur + delta * step;
+    if (next < 0) next = 0;
+    amt.value = String(Math.round(next * 1000) / 1000);
+    rerender();
+  };
+
+  container.querySelector('#nf-serving-up').addEventListener('click', () => stepBy(1));
+  container.querySelector('#nf-serving-down').addEventListener('click', () => stepBy(-1));
+  amt.addEventListener('input', rerender);
+  unitSel.addEventListener('change', rerender);
+
+  rerender();
 }
 
 function closeNutritionModal() {

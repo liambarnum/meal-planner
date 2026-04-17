@@ -1062,6 +1062,28 @@ body {
 .modal-actions-stack .btn {
   width: 100%;
 }
+.nf-serving-editor {
+  margin-bottom: 12px;
+}
+.nf-serving-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.nf-serving-stepper .nf-serving-unit {
+  margin-left: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+}
 .chip-no-nutrition {
   color: #e6a817;
   font-size: 0.85em;
