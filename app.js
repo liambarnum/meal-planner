@@ -2010,7 +2010,7 @@ function bindIngredientEditModal() {
     const cur = parseQuantityInput(amt.value);
     let next = (isNaN(cur) ? 0 : cur) + delta * step;
     if (next < 0) next = 0;
-    next = Math.round(next * 1000) / 1000;
+    next = Math.round(next * 100) / 100;
     amt.value = String(next);
   };
 
@@ -2018,7 +2018,7 @@ function bindIngredientEditModal() {
   document.getElementById('ing-edit-down').addEventListener('click', () => stepBy(-1));
   amt.addEventListener('blur', () => {
     const qty = parseQuantityInput(amt.value);
-    if (!isNaN(qty)) amt.value = String(Math.round(qty * 1000) / 1000);
+    if (!isNaN(qty)) amt.value = String(Math.round(qty * 100) / 100);
   });
   document.getElementById('ing-edit-cancel').addEventListener('click', closeIngredientEditModal);
   document.getElementById('ing-edit-overlay').addEventListener('click', (e) => {
@@ -2027,8 +2027,9 @@ function bindIngredientEditModal() {
 
   document.getElementById('ing-edit-save').addEventListener('click', () => {
     if (!ingEditCtx) return;
-    const qty = parseQuantityInput(amt.value);
-    if (isNaN(qty) || qty < 0) return;
+    const rawQty = parseQuantityInput(amt.value);
+    if (isNaN(rawQty) || rawQty < 0) return;
+    const qty = Math.round(rawQty * 100) / 100;
     const unit = unitSel.value || '';
     const newAmount = unit ? `${qty} ${unit}`.trim() : `${qty}`;
 

@@ -1089,8 +1089,9 @@ function renderServingEditableLabel(container, ing) {
   const inner = container.querySelector('#nf-serving-label-inner');
 
   const rerender = () => {
-    const qty = parseQuantityInput(amt.value);
-    if (isNaN(qty) || qty < 0) return;
+    const rawQty = parseQuantityInput(amt.value);
+    if (isNaN(rawQty) || rawQty < 0) return;
+    const qty = Math.round(rawQty * 100) / 100;
     const unit = unitSel.value || '';
     const newAmount = unit ? `${qty} ${unit}`.trim() : `${qty}`;
     ing.amount = newAmount;
@@ -1103,7 +1104,7 @@ function renderServingEditableLabel(container, ing) {
     const cur = parseQuantityInput(amt.value);
     let next = (isNaN(cur) ? 0 : cur) + delta * step;
     if (next < 0) next = 0;
-    amt.value = String(Math.round(next * 1000) / 1000);
+    amt.value = String(Math.round(next * 100) / 100);
     rerender();
   };
 
@@ -1112,7 +1113,7 @@ function renderServingEditableLabel(container, ing) {
   amt.addEventListener('input', rerender);
   amt.addEventListener('blur', () => {
     const qty = parseQuantityInput(amt.value);
-    if (!isNaN(qty)) amt.value = String(Math.round(qty * 1000) / 1000);
+    if (!isNaN(qty)) amt.value = String(Math.round(qty * 100) / 100);
   });
   unitSel.addEventListener('change', rerender);
 
