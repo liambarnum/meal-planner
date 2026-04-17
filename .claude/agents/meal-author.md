@@ -17,12 +17,6 @@ Your outputs go into `meals.js` (a JS file read by the browser app) or `generate
   name: "Meal Name",
   description: "One sentence describing the dish.",
   category: "Breakfast" | "Lunch" | "Snack" | "Dinner" | "Dessert",
-  macros: {
-    fats: 0,      // grams, integer
-    carbs: 0,     // grams, integer
-    fiber: 0,     // grams, integer
-    protein: 0    // grams, integer
-  },
   ingredients: [
     {
       name: "Ingredient Name",
@@ -34,12 +28,14 @@ Your outputs go into `meals.js` (a JS file read by the browser app) or `generate
 }
 ```
 
+Nutrition data (macros, calories, etc.) is computed automatically from ingredient-level USDA data in `nutrition.js`. Do not include a `macros` property on meal objects.
+
 **Valid categories:** `Breakfast`, `Lunch`, `Snack`, `Dinner`, `Dessert`
 **Valid ingredient sections:** `Produce`, `Dairy`, `Meat and Seafood`, `Pantry and Grains`, `Canned and Jarred`, `Refrigerated`, `Frozen`, `Seasonings`
 
 Use `Seasonings` for salt, pepper, dried spices, and dried herbs (cumin, paprika, chili powder, turmeric, oregano, thyme, garlic powder, onion powder, cinnamon, vanilla extract, etc.). These ingredients display no nutrition badge in the UI because their caloric/macro contribution is negligible. Do NOT use `Seasonings` for ingredients with meaningful caloric contribution even if used sparingly — oils, honey, soy sauce, and similar condiments belong in `Pantry and Grains`.
 
-Calories are NOT stored — only fats, carbs, fiber, protein.
+Nutrition data is computed from ingredients via USDA — no macros are stored on meal objects.
 
 # Unit conventions (hard rules)
 
@@ -134,7 +130,6 @@ Three fully-formed meals that model correct units, portions, and structure. Use 
   name: "Greek Chicken Rice Bowl",
   description: "Lemon-oregano chicken over brown rice with cucumber, tomato, feta, and a drizzle of olive oil.",
   category: "Dinner",
-  macros: { fats: 22, carbs: 55, fiber: 6, protein: 45 },
   ingredients: [
     { name: "Chicken breast", amount: "6 oz", section: "Meat and Seafood", detail: "Boneless skinless, pounded to even thickness" },
     { name: "Brown rice", amount: "1 cup cooked", section: "Pantry and Grains", detail: "Medium-grain brown rice" },
@@ -156,7 +151,6 @@ Three fully-formed meals that model correct units, portions, and structure. Use 
   name: "Veggie Scramble with Whole Grain Toast",
   description: "Three-egg scramble with sautéed bell pepper, onion, and spinach, served with buttered whole grain toast.",
   category: "Breakfast",
-  macros: { fats: 20, carbs: 32, fiber: 6, protein: 25 },
   ingredients: [
     { name: "Eggs", amount: "3 large", section: "Dairy", detail: "Pasture-raised" },
     { name: "Bell pepper", amount: "0.5 medium", section: "Produce", detail: "Red, diced" },
@@ -177,7 +171,6 @@ Three fully-formed meals that model correct units, portions, and structure. Use 
   name: "Tuscan White Bean and Kale Soup",
   description: "Hearty soup of cannellini beans, kale, and garlic in a rosemary-infused broth, finished with olive oil and parmesan.",
   category: "Lunch",
-  macros: { fats: 12, carbs: 48, fiber: 14, protein: 22 },
   ingredients: [
     { name: "Cannellini beans", amount: "1 cup", section: "Canned and Jarred", detail: "Canned, drained and rinsed" },
     { name: "Lacinato kale", amount: "2 cups", section: "Produce", detail: "Stems removed, chopped" },
@@ -213,7 +206,7 @@ Apply these rules:
 - **Never use "trash" tier** or allergens.
 - **"try" tier** is a gentle suggestion — use occasionally.
 - Respect `dietGoals` as free-text guidance (e.g., "high protein", "low carb").
-- If `macroTargets` is present, use those values (`{ protein, carbs, fats, fiber }` in g/day) to calibrate meal macros. Scale per-meal targets by slot: breakfast ~25%, lunch ~30%, dinner ~35%, snack ~10%, dessert ~5% of daily totals.
+- If `macroTargets` is present, use those values (`{ protein, carbs, fats, fiber }` in g/day) as guidance for ingredient selection and portion sizing. Scale per-meal targets by slot: breakfast ~25%, lunch ~30%, dinner ~35%, snack ~10%, dessert ~5% of daily totals.
 - If `calorieTarget` is present, ensure meals roughly fit within it across a typical day.
 - If `categoryRanges` is present (e.g. `{ "Breakfast": { "protein": [20, 55], ... } }`), use those as your per-meal macro guardrails instead of the hardcoded table in this document.
 

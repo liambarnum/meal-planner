@@ -30,17 +30,13 @@ Each meal in the `MEALS` array has this structure:
   name: "Meal Name",
   description: "Short description.",
   category: "Breakfast",         // One of: Breakfast, Lunch, Snack, Dinner, Dessert
-  macros: {
-    fats: 10,                    // grams
-    carbs: 30,
-    fiber: 8,
-    protein: 15
-  },
   ingredients: [
     { name: "Oats", amount: "1 cup", section: "Pantry and Grains" }
   ]
 }
 ```
+
+Nutrition data (macros, calories, etc.) is computed automatically from ingredient-level USDA data in `nutrition.js`. No manual macros are stored on meal objects.
 
 ### Valid ingredient sections
 

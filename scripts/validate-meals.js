@@ -44,15 +44,6 @@ const PROTEIN_WORDS = new Set([
   'steak', 'sirloin', 'ribeye', 'strip', 'brisket', 'chuck'
 ]);
 
-// Per-category macro plausibility (WARN only — these are soft ranges)
-const MACRO_RANGES = {
-  Breakfast: { protein: [8, 45], carbs: [15, 120], fats: [4, 32], fiber: [0, 25] },
-  Lunch:     { protein: [18, 60], carbs: [15, 105], fats: [6, 40], fiber: [0, 25] },
-  Dinner:    { protein: [18, 60], carbs: [15, 105], fats: [6, 42], fiber: [0, 25] },
-  Snack:     { protein: [2, 32], carbs: [3, 55], fats: [1, 22], fiber: [0, 20] },
-  Dessert:   { protein: [0, 28], carbs: [8, 65], fats: [0, 22], fiber: [0, 15] }
-};
-
 // ─── LOADING ───
 
 function loadMeals(filePath) {
@@ -139,7 +130,7 @@ function isRawGrain(name) {
 // ─── RULES ───
 
 function checkSchema(meal, issues) {
-  const required = ['id', 'name', 'category', 'description', 'macros', 'ingredients'];
+  const required = ['id', 'name', 'category', 'description', 'ingredients'];
   for (const field of required) {
     if (meal[field] === undefined || meal[field] === null || meal[field] === '') {
       issues.push({ level: 'ERROR', msg: `missing required field: ${field}` });
@@ -150,13 +141,6 @@ function checkSchema(meal, issues) {
   }
   if (meal.category && !VALID_CATEGORIES.has(meal.category)) {
     issues.push({ level: 'ERROR', msg: `invalid category: "${meal.category}"` });
-  }
-  if (meal.macros) {
-    for (const key of ['fats', 'carbs', 'fiber', 'protein']) {
-      if (typeof meal.macros[key] !== 'number') {
-        issues.push({ level: 'ERROR', msg: `macros.${key} must be a number` });
-      }
-    }
   }
   if (!Array.isArray(meal.ingredients) || meal.ingredients.length === 0) {
     issues.push({ level: 'ERROR', msg: 'ingredients must be a non-empty array' });
@@ -240,23 +224,6 @@ function checkIngredients(meal, issues) {
   }
 }
 
-function checkMacros(meal, issues) {
-  if (!meal.macros || !meal.category) return;
-  const ranges = MACRO_RANGES[meal.category];
-  if (!ranges) return;
-  for (const key of ['protein', 'carbs', 'fats', 'fiber']) {
-    const val = meal.macros[key];
-    if (typeof val !== 'number') continue;
-    const [lo, hi] = ranges[key];
-    if (val < lo || val > hi) {
-      issues.push({
-        level: 'WARN',
-        msg: `macros.${key} = ${val}g is outside typical range for ${meal.category} (${lo}–${hi}g)`
-      });
-    }
-  }
-}
-
 function checkUniqueIds(meals) {
   const seen = new Map();
   const duplicates = [];
@@ -281,7 +248,6 @@ function validate(meals) {
     const issues = [];
     checkSchema(meal, issues);
     checkIngredients(meal, issues);
-    checkMacros(meal, issues);
 
     if (issues.length > 0) {
       report.push({ meal, issues });

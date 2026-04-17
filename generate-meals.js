@@ -75,7 +75,7 @@ EXISTING MEALS (do not duplicate these):
 ${existingList}
 
 SCHEMA:
-- Required fields: id (kebab-case, unique), name, description, category, macros, ingredients.
+- Required fields: id (kebab-case, unique), name, description, category, ingredients.
 - Valid categories: Breakfast, Lunch, Snack, Dinner, Dessert.
 - Valid ingredient sections: Produce, Dairy, Meat and Seafood, Pantry and Grains, Canned and Jarred, Refrigerated, Frozen.
 - Macros are integers in grams: fats, carbs, fiber, protein. Calories are NOT included.
@@ -123,12 +123,13 @@ OUTPUT FORMAT — respond with ONLY a valid JSON array, no other text:
     "name": "Meal Name",
     "description": "One sentence description.",
     "category": "Breakfast",
-    "macros": { "fats": 10, "carbs": 40, "fiber": 6, "protein": 20 },
     "ingredients": [
       { "name": "Ingredient Name", "amount": "1 cup", "section": "Produce" }
     ]
   }
-]`;
+]
+
+NOTE: Nutrition data (macros, calories) is computed automatically from ingredients via the USDA database. Do not include a "macros" property.`;
 }
 
 // ─── CALL CLAUDE API ───

@@ -163,8 +163,8 @@ function getMeal(id) {
   return state.masterMeals.find(m => m.id === id);
 }
 
-// Returns macros from ingredient-level USDA computation when available,
-// falling back to the manually-specified meal.macros.
+// Returns macros computed from ingredient-level USDA data.
+// When USDA data is unavailable, returns zeros (partial data).
 function getMealCalories(m) {
   return Math.round(m.protein * 4 + m.carbs * 4 + m.fats * 9);
 }
@@ -176,10 +176,11 @@ function getEffectiveMacros(meal) {
       fats: Math.round(totals.totalFat),
       carbs: Math.round(totals.totalCarbs),
       fiber: Math.round(totals.dietaryFiber),
-      protein: Math.round(totals.protein)
+      protein: Math.round(totals.protein),
+      calories: Math.round(totals.calories)
     };
   }
-  return meal.macros;
+  return { fats: 0, carbs: 0, fiber: 0, protein: 0, calories: 0 };
 }
 
 /* ─── TDEE CALCULATION ─── */
@@ -1031,7 +1032,7 @@ CURRENT CONTEXT:
 - Page: ${state.currentPage}
 
 CAPABILITIES - You can instruct data changes using these exact formats on their own line:
-[ADD_MEAL] id|name|category|description|fats|carbs|fiber|protein|ingredients_json
+[ADD_MEAL] id|name|category|description|ingredients_json
 [EDIT_MEAL] id|field|new_value
 [REMOVE_MEAL] id
 [ASSIGN] date-slot|meal_id  (date in YYYY-MM-DD format, e.g. 2026-03-31-Breakfast)
@@ -1041,6 +1042,7 @@ For ingredients_json use: [{"name":"X","amount":"Y","section":"Z"}]
 Valid categories: Breakfast, Lunch, Snack, Dinner, Dessert
 Valid slots: Breakfast, Lunch, Snack, Dinner, Dessert
 Dates must be ISO format (YYYY-MM-DD) within the current range.
+Note: Nutrition data (macros, calories) is computed automatically from ingredients via the USDA database — do not specify macros manually.
 
 When making changes, include the command AND a natural language explanation. Keep responses concise and helpful.`;
 }
@@ -1054,21 +1056,15 @@ function processAssistantActions(reply) {
 
     if (trimmed.startsWith('[ADD_MEAL]')) {
       const parts = trimmed.replace('[ADD_MEAL]', '').trim().split('|');
-      if (parts.length >= 8) {
+      if (parts.length >= 4) {
         const newMeal = {
           id: parts[0].trim(),
           name: parts[1].trim(),
           category: parts[2].trim(),
           description: parts[3].trim(),
-          macros: {
-            fats: parseInt(parts[4]) || 0,
-            carbs: parseInt(parts[5]) || 0,
-            fiber: parseInt(parts[6]) || 0,
-            protein: parseInt(parts[7]) || 0
-          },
           ingredients: []
         };
-        try { if (parts[8]) newMeal.ingredients = JSON.parse(parts[8].trim()); } catch (e) {}
+        try { if (parts[4]) newMeal.ingredients = JSON.parse(parts[4].trim()); } catch (e) {}
         if (!getMeal(newMeal.id)) { state.masterMeals.push(newMeal); changed = true; }
       }
     }
@@ -1082,10 +1078,6 @@ function processAssistantActions(reply) {
           const value = parts.slice(2).join('|').trim();
           if (field === 'name') meal.name = value;
           else if (field === 'description') meal.description = value;
-          else if (field === 'fiber') meal.macros.fiber = parseInt(value) || 0;
-          else if (field === 'fats') meal.macros.fats = parseInt(value) || 0;
-          else if (field === 'carbs') meal.macros.carbs = parseInt(value) || 0;
-          else if (field === 'protein') meal.macros.protein = parseInt(value) || 0;
           else if (field === 'ingredients') { try { meal.ingredients = JSON.parse(value); } catch (e) {} }
           changed = true;
         }

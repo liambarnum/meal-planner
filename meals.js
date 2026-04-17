@@ -10,16 +10,13 @@
  *   name: "Meal Name",
  *   description: "Short description of the meal.",
  *   category: "Breakfast" | "Lunch" | "Snack" | "Dinner" | "Dessert",
- *   macros: {
- *     fats: 0,       // grams
- *     carbs: 0,      // grams
- *     fiber: 0,      // grams
- *     protein: 0     // grams
- *   },
  *   ingredients: [
  *     { name: "Ingredient Name", amount: "1 cup", section: "Produce" }
  *   ]
  * }
+ *
+ * Nutrition data (macros, calories, etc.) is computed automatically from
+ * ingredient-level USDA data in nutrition.js — no manual macros needed.
  *
  * Valid sections for ingredients:
  *   "Produce", "Dairy", "Meat and Seafood", "Pantry and Grains",
@@ -36,7 +33,6 @@ const MEALS = [
     name: "Banana Greek Yogurt Bowl",
     description: "Greek yogurt topped with banana slices and a drizzle of honey.",
     category: "Breakfast",
-    macros: { fats: 5, carbs: 75, fiber: 6, protein: 22 },
     ingredients: [
       { name: "Plain Greek yogurt", amount: "1 cup", section: "Dairy", detail: "Non-fat vanilla Greek yogurt (e.g. Fage 0%, Chobani)" },
       { name: "Banana", amount: "2 medium", section: "Produce", detail: "Medium bananas" },
@@ -49,7 +45,6 @@ const MEALS = [
     name: "Overnight Oats with Blueberries",
     description: "Steel cut oats soaked overnight in milk and topped with fresh blueberries.",
     category: "Breakfast",
-    macros: { fats: 10, carbs: 105, fiber: 14, protein: 25 },
     ingredients: [
       { name: "Rolled oats", amount: "1.5 cups", section: "Pantry and Grains", detail: "Steel cut oats (not instant)" },
       { name: "Low-fat milk", amount: "1.5 cups", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
@@ -63,7 +58,6 @@ const MEALS = [
     name: "Oat and Apple Porridge with Flaxseed",
     description: "Warm oat porridge with diced apple and ground flaxseed for extra fiber and omega-3s.",
     category: "Breakfast",
-    macros: { fats: 12, carbs: 100, fiber: 16, protein: 26 },
     ingredients: [
       { name: "Rolled oats", amount: "1.5 cups", section: "Pantry and Grains", detail: "Old-fashioned rolled oats (not instant or steel-cut)" },
       { name: "Low-fat milk", amount: "1.5 cups", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
@@ -78,7 +72,6 @@ const MEALS = [
     name: "Mixed Berry Chia Pudding",
     description: "Chia seeds soaked in milk topped with a mix of strawberries, raspberries, and blueberries.",
     category: "Breakfast",
-    macros: { fats: 12, carbs: 42, fiber: 18, protein: 12 },
     ingredients: [
       { name: "Chia seeds", amount: "3 tbsp", section: "Pantry and Grains", detail: "Black or white chia seeds — both work equally" },
       { name: "Low-fat milk", amount: "1 cup", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
@@ -93,7 +86,6 @@ const MEALS = [
     name: "Greek Yogurt with Mixed Berries and Flaxseed",
     description: "Thick Greek yogurt layered with mixed berries and a sprinkle of ground flaxseed.",
     category: "Breakfast",
-    macros: { fats: 11, carbs: 35, fiber: 8, protein: 33 },
     ingredients: [
       { name: "Plain Greek yogurt", amount: "1.5 cups", section: "Dairy", detail: "Non-fat vanilla Greek yogurt (e.g. Fage 0%, Chobani)" },
       { name: "Mixed berries", amount: "1 cup", section: "Produce", detail: "Fresh or frozen blend of strawberries, blueberries, and raspberries" },
@@ -105,7 +97,6 @@ const MEALS = [
     name: "Scrambled Eggs with Spinach and Cheddar",
     description: "Fluffy scrambled eggs with wilted baby spinach and melted cheddar cheese.",
     category: "Breakfast",
-    macros: { fats: 22, carbs: 4, fiber: 2, protein: 28 },
     ingredients: [
       { name: "Eggs", amount: "3 large", section: "Dairy", detail: "Large pasture-raised eggs" },
       { name: "Baby spinach", amount: "2 cups", section: "Produce", detail: "Pre-washed baby spinach leaves" },
@@ -121,7 +112,6 @@ const MEALS = [
     name: "Black Bean and Egg Breakfast Skillet",
     description: "Sizzling skillet of crispy potatoes, black beans, and fried eggs seasoned with smoked paprika and chili powder.",
     category: "Breakfast",
-    macros: { fats: 15, carbs: 48, fiber: 12, protein: 28 },
     ingredients: [
       { name: "Eggs", amount: "3 large", section: "Dairy", detail: "Pasture-raised, fried or over-easy in the skillet" },
       { name: "Black beans", amount: "0.5 cup", section: "Canned and Jarred", detail: "Canned, drained and rinsed" },
@@ -143,7 +133,6 @@ const MEALS = [
     name: "Egg Drop Soup with Ground Beef",
     description: "Rich bone broth soup with whisked eggs, seasoned ground beef, and wilted spinach.",
     category: "Lunch",
-    macros: { fats: 18, carbs: 4, fiber: 2, protein: 45 },
     ingredients: [
       { name: "Bone broth", amount: "2 cups", section: "Canned and Jarred", detail: "Chicken bone broth (e.g. Kettle & Fire, Pacific Foods)" },
       { name: "Eggs", amount: "3 large", section: "Dairy", detail: "Large pasture-raised eggs" },
@@ -161,7 +150,6 @@ const MEALS = [
     name: "Ground Turkey and Kimchi Rice Bowl",
     description: "Seasoned ground turkey over brown rice with tangy kimchi and garlic.",
     category: "Lunch",
-    macros: { fats: 14, carbs: 58, fiber: 4, protein: 42 },
     ingredients: [
       { name: "Ground turkey", amount: "6 oz", section: "Meat and Seafood", detail: "93/7 lean ground turkey" },
       { name: "Brown rice", amount: "1.5 cups cooked", section: "Pantry and Grains", detail: "Medium-grain brown rice, cooked and cooled slightly" },
@@ -177,7 +165,6 @@ const MEALS = [
     name: "Black Bean and Beef Taco Bowl",
     description: "Taco-seasoned ground beef with black beans, greens, salsa, and melted cheddar.",
     category: "Lunch",
-    macros: { fats: 22, carbs: 38, fiber: 12, protein: 44 },
     ingredients: [
       { name: "Ground beef", amount: "6 oz", section: "Meat and Seafood", detail: "90/10 ground beef" },
       { name: "Mixed greens", amount: "2 cups", section: "Produce", detail: "Spring mix or mesclun blend" },
@@ -195,7 +182,6 @@ const MEALS = [
     name: "Ground Beef and Roasted Carrot Bowl with Feta",
     description: "Savory ground beef and roasted carrots over arugula with crumbled feta and olive oil.",
     category: "Lunch",
-    macros: { fats: 30, carbs: 22, fiber: 6, protein: 40 },
     ingredients: [
       { name: "Ground beef", amount: "6 oz", section: "Meat and Seafood", detail: "90/10 ground beef" },
       { name: "Carrots", amount: "2 large", section: "Produce", detail: "Large whole carrots, peeled and cut into 1-inch pieces" },
@@ -212,7 +198,6 @@ const MEALS = [
     name: "Chicken and Red Lentil Soup with Sourdough",
     description: "Hearty soup with shredded rotisserie chicken, red lentils, and garlic served with sourdough.",
     category: "Lunch",
-    macros: { fats: 10, carbs: 72, fiber: 14, protein: 55 },
     ingredients: [
       { name: "Rotisserie chicken", amount: "8 oz", section: "Meat and Seafood", detail: "Store-bought rotisserie chicken, skin removed, meat shredded" },
       { name: "Bone broth", amount: "2.5 cups", section: "Canned and Jarred", detail: "Chicken bone broth (e.g. Kettle & Fire, Pacific Foods)" },
@@ -230,7 +215,6 @@ const MEALS = [
     name: "Tuna Melt Bowl",
     description: "Protein-packed tuna mixed with Greek yogurt and lemon over greens with melted cheddar and toast.",
     category: "Lunch",
-    macros: { fats: 16, carbs: 30, fiber: 4, protein: 55 },
     ingredients: [
       { name: "Canned tuna", amount: "2 cans (5 oz each)", section: "Canned and Jarred", detail: "Chunk light tuna in water, drained (e.g. Wild Planet, Starkist)" },
       { name: "Plain Greek yogurt", amount: "3 tbsp", section: "Dairy", detail: "Non-fat vanilla Greek yogurt — used as a lighter mayo substitute" },
@@ -249,7 +233,6 @@ const MEALS = [
     name: "Soy-Glazed Chicken Thigh and Broccoli Rice Bowl",
     description: "Boneless chicken thighs glazed with soy sauce and garlic over white rice with steamed broccoli and spicy kimchi.",
     category: "Lunch",
-    macros: { fats: 18, carbs: 72, fiber: 8, protein: 52 },
     ingredients: [
       { name: "Boneless skinless chicken thighs", amount: "7 oz", section: "Meat and Seafood", detail: "Trimmed of excess fat, sliced into strips" },
       { name: "White rice", amount: "0.5 cup dry", section: "Pantry and Grains", detail: "Long-grain white rice, cooked in water" },
@@ -269,7 +252,6 @@ const MEALS = [
     name: "Greek Yogurt with Chia Seeds and Mixed Berries",
     description: "Thick Greek yogurt stirred with chia seeds and topped with mixed berries and a drizzle of honey.",
     category: "Snack",
-    macros: { fats: 9, carbs: 30, fiber: 10, protein: 22 },
     ingredients: [
       { name: "Plain Greek yogurt", amount: "1 cup", section: "Dairy", detail: "Non-fat plain Greek yogurt (e.g. Fage 0%, Chobani)" },
       { name: "Chia seeds", amount: "1.5 tbsp", section: "Pantry and Grains", detail: "Black or white chia seeds, stirred in" },
@@ -284,7 +266,6 @@ const MEALS = [
     name: "Cottage Cheese with Sliced Apple",
     description: "Creamy cottage cheese paired with crisp apple slices.",
     category: "Snack",
-    macros: { fats: 5, carbs: 30, fiber: 4, protein: 28 },
     ingredients: [
       { name: "Cottage cheese", amount: "1 cup", section: "Dairy", detail: "2% low-fat cottage cheese (e.g. Good Culture, Daisy)" },
       { name: "Apple", amount: "1 medium", section: "Produce", detail: "Honeycrisp or Fuji apple, sliced with skin on" }
@@ -295,7 +276,6 @@ const MEALS = [
     name: "Cottage Cheese with Ground Flaxseed",
     description: "Cottage cheese topped with ground flaxseed for a fiber and omega-3 boost.",
     category: "Snack",
-    macros: { fats: 10, carbs: 8, fiber: 5, protein: 30 },
     ingredients: [
       { name: "Cottage cheese", amount: "1 cup", section: "Dairy", detail: "2% low-fat cottage cheese (e.g. Good Culture, Daisy)" },
       { name: "Ground flaxseed", amount: "1.5 tbsp", section: "Pantry and Grains", detail: "Pre-ground golden or brown flaxseed meal (e.g. Bob's Red Mill)" }
@@ -306,7 +286,6 @@ const MEALS = [
     name: "Chia Pudding with Raspberries",
     description: "Thick chia pudding made with milk and topped with fresh raspberries.",
     category: "Snack",
-    macros: { fats: 12, carbs: 28, fiber: 18, protein: 10 },
     ingredients: [
       { name: "Chia seeds", amount: "3 tbsp", section: "Pantry and Grains", detail: "Black or white chia seeds — both work equally" },
       { name: "Low-fat milk", amount: "1 cup", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
@@ -319,7 +298,6 @@ const MEALS = [
     name: "Cottage Cheese with Flaxseed and Sliced Pear",
     description: "Cottage cheese with ground flaxseed and sweet pear slices.",
     category: "Snack",
-    macros: { fats: 8, carbs: 32, fiber: 7, protein: 29 },
     ingredients: [
       { name: "Cottage cheese", amount: "1 cup", section: "Dairy", detail: "2% low-fat cottage cheese (e.g. Good Culture, Daisy)" },
       { name: "Ground flaxseed", amount: "1 tbsp", section: "Pantry and Grains", detail: "Pre-ground golden or brown flaxseed meal (e.g. Bob's Red Mill)" },
@@ -331,7 +309,6 @@ const MEALS = [
     name: "Apple with Sharp Cheddar",
     description: "Classic pairing of crisp apple slices with sharp cheddar cheese.",
     category: "Snack",
-    macros: { fats: 14, carbs: 25, fiber: 4, protein: 11 },
     ingredients: [
       { name: "Apple", amount: "1 medium", section: "Produce", detail: "Honeycrisp or Granny Smith apple, sliced" },
       { name: "Sharp cheddar cheese", amount: "1.5 oz", section: "Dairy", detail: "Extra sharp cheddar, sliced or cubed (e.g. Tillamook, Cabot)" }
@@ -342,7 +319,6 @@ const MEALS = [
     name: "Banana with Cottage Cheese",
     description: "Sliced banana served with a bowl of cottage cheese for a quick protein-rich snack.",
     category: "Snack",
-    macros: { fats: 5, carbs: 35, fiber: 4, protein: 30 },
     ingredients: [
       { name: "Banana", amount: "1 large", section: "Produce", detail: "Ripe yellow banana with a few brown spots for sweetness" },
       { name: "Cottage cheese", amount: "1 cup", section: "Dairy", detail: "2% low-fat cottage cheese (e.g. Good Culture, Daisy)" }
@@ -355,7 +331,6 @@ const MEALS = [
     name: "Black Bean and Ground Beef Chili over White Rice",
     description: "Bold chili of 90/10 ground beef and black beans simmered with garlic, chili powder, and smoked paprika, served over white rice.",
     category: "Dinner",
-    macros: { fats: 24, carbs: 82, fiber: 16, protein: 58 },
     ingredients: [
       { name: "90/10 Ground Beef", amount: "8 oz", section: "Meat and Seafood", detail: "90/10 lean ground beef, crumbled while browning" },
       { name: "Black beans", amount: "1 cup", section: "Canned and Jarred", detail: "Canned, drained and rinsed" },
@@ -377,7 +352,6 @@ const MEALS = [
     name: "Loaded Baked Sweet Potatoes with Ground Beef and Cheddar",
     description: "Baked sweet potatoes stuffed with cumin-seasoned ground beef and melted cheddar.",
     category: "Dinner",
-    macros: { fats: 24, carbs: 58, fiber: 10, protein: 42 },
     ingredients: [
       { name: "Sweet potatoes", amount: "2 medium", section: "Produce", detail: "Orange-fleshed sweet potatoes (garnet or jewel variety)" },
       { name: "Ground beef", amount: "6 oz", section: "Meat and Seafood", detail: "90/10 ground beef" },
@@ -394,7 +368,6 @@ const MEALS = [
     name: "Crispy Chicken Thighs with Roasted Broccoli and Parmesan",
     description: "Crispy skin-on chicken thighs alongside roasted broccoli topped with shaved Parmesan.",
     category: "Dinner",
-    macros: { fats: 36, carbs: 16, fiber: 8, protein: 52 },
     ingredients: [
       { name: "Bone-in chicken thighs", amount: "2 large", section: "Meat and Seafood", detail: "Bone-in, skin-on chicken thighs — pat dry for crispy skin" },
       { name: "Broccoli", amount: "1 large head", section: "Produce", detail: "Fresh broccoli crown, cut into bite-sized florets" },
@@ -410,7 +383,6 @@ const MEALS = [
     name: "Garlic Salmon with Roasted Broccoli and Feta",
     description: "Garlic-rubbed salmon fillet with roasted broccoli and crumbled feta cheese.",
     category: "Dinner",
-    macros: { fats: 34, carbs: 16, fiber: 8, protein: 50 },
     ingredients: [
       { name: "Salmon fillet", amount: "8 oz", section: "Meat and Seafood", detail: "Wild-caught Atlantic salmon fillet, skin-on" },
       { name: "Broccoli", amount: "1 large head", section: "Produce", detail: "Fresh broccoli crown, cut into bite-sized florets" },
@@ -428,7 +400,6 @@ const MEALS = [
     name: "Pinto Bean and Ground Turkey Skillet with Cheddar over Brown Rice",
     description: "Ground turkey and pinto beans seasoned with cumin and garlic, topped with cheddar over brown rice.",
     category: "Dinner",
-    macros: { fats: 20, carbs: 62, fiber: 12, protein: 50 },
     ingredients: [
       { name: "Ground turkey", amount: "6 oz", section: "Meat and Seafood", detail: "93/7 lean ground turkey" },
       { name: "Pinto beans", amount: "0.75 cup", section: "Canned and Jarred", detail: "Canned pinto beans, drained and rinsed" },
@@ -446,7 +417,6 @@ const MEALS = [
     name: "Steak with Roasted Sweet Potato and Green Beans",
     description: "Seared sirloin steak served with roasted sweet potatoes and tender green beans.",
     category: "Dinner",
-    macros: { fats: 26, carbs: 55, fiber: 12, protein: 52 },
     ingredients: [
       { name: "Sirloin steak", amount: "8 oz", section: "Meat and Seafood", detail: "USDA Choice top sirloin, 1-inch thick" },
       { name: "Sweet potatoes", amount: "2 medium", section: "Produce", detail: "Orange-fleshed sweet potatoes, cubed for roasting" },
@@ -462,7 +432,6 @@ const MEALS = [
     name: "Steak with Roasted Baby Potatoes and Green Beans",
     description: "Grilled NY strip steak with crispy roasted baby potatoes and green beans.",
     category: "Dinner",
-    macros: { fats: 28, carbs: 48, fiber: 8, protein: 56 },
     ingredients: [
       { name: "NY strip steak", amount: "9 oz", section: "Meat and Seafood", detail: "USDA Choice NY strip, 1.25-inch thick" },
       { name: "Baby potatoes", amount: "2 cups", section: "Produce", detail: "Mixed baby potatoes (red, yellow, purple), halved" },
@@ -480,7 +449,6 @@ const MEALS = [
     name: "Banana Chia Pudding with Honey",
     description: "Creamy chia pudding made with low-fat milk and sliced banana, drizzled with honey.",
     category: "Dessert",
-    macros: { fats: 8, carbs: 32, fiber: 10, protein: 8 },
     ingredients: [
       { name: "Chia seeds", amount: "2 tbsp", section: "Pantry and Grains", detail: "Black or white chia seeds" },
       { name: "Low-fat milk", amount: "0.75 cup", section: "Dairy", detail: "1% low-fat milk or unsweetened oat milk" },
@@ -494,7 +462,6 @@ const MEALS = [
     name: "Greek Yogurt with Honey",
     description: "Simple and satisfying Greek yogurt drizzled with honey as an evening treat.",
     category: "Dessert",
-    macros: { fats: 5, carbs: 26, fiber: 0, protein: 20 },
     ingredients: [
       { name: "Plain Greek yogurt", amount: "1 cup", section: "Dairy", detail: "Non-fat vanilla Greek yogurt (e.g. Fage 0%, Chobani)" },
       { name: "Honey", amount: "1 tbsp", section: "Pantry and Grains", detail: "Raw wildflower honey or any pure honey" }
