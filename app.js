@@ -1159,9 +1159,7 @@ function processAssistantActions(reply) {
 /* ─── NUTRITION MODAL BINDING ─── */
 function bindNutritionModal() {
   document.getElementById('nutrition-close-btn').addEventListener('click', closeNutritionModal);
-  document.getElementById('nutrition-overlay').addEventListener('click', (e) => {
-    if (e.target.id === 'nutrition-overlay') closeNutritionModal();
-  });
+  attachBackdropCloseGuard(document.getElementById('nutrition-overlay'), closeNutritionModal);
 
   document.getElementById('nf-edit-btn').addEventListener('click', () => {
     const ing = getCurrentNutritionIngredient();
@@ -1990,6 +1988,24 @@ function bindTierDragDrop() {
   });
 }
 
+/* ─── MODAL BACKDROP CLOSE GUARD ─── */
+// Only close a modal when BOTH mousedown and mouseup land on the overlay
+// background itself. Prevents drag-selections that end outside the modal
+// (e.g. highlighting text in an input and releasing off-screen) from closing it.
+function attachBackdropCloseGuard(overlay, onClose) {
+  let downOnBackdrop = false;
+  overlay.addEventListener('mousedown', (e) => {
+    downOnBackdrop = e.target === overlay;
+  });
+  overlay.addEventListener('touchstart', (e) => {
+    downOnBackdrop = e.target === overlay;
+  }, { passive: true });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay && downOnBackdrop) onClose();
+    downOnBackdrop = false;
+  });
+}
+
 /* ─── HELPERS ─── */
 function esc(str) {
   const div = document.createElement('div');
@@ -2046,9 +2062,7 @@ function bindIngredientEditModal() {
     if (!isNaN(qty)) amt.value = String(Math.round(qty * 100) / 100);
   });
   document.getElementById('ing-edit-cancel').addEventListener('click', closeIngredientEditModal);
-  document.getElementById('ing-edit-overlay').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeIngredientEditModal();
-  });
+  attachBackdropCloseGuard(document.getElementById('ing-edit-overlay'), closeIngredientEditModal);
 
   document.getElementById('ing-edit-save').addEventListener('click', () => {
     if (!ingEditCtx) return;
@@ -2086,9 +2100,7 @@ function bindIngredientEditModal() {
 
   // Scope modal buttons
   document.getElementById('ing-scope-cancel').addEventListener('click', closeScopeModal);
-  document.getElementById('ing-scope-overlay').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeScopeModal();
-  });
+  attachBackdropCloseGuard(document.getElementById('ing-scope-overlay'), closeScopeModal);
   document.getElementById('ing-scope-retro').addEventListener('click', () => {
     if (!pendingMealEdit) return;
     const { mealId, ingredientName, newAmount } = pendingMealEdit;
