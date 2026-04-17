@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
 
@@ -380,6 +380,30 @@
     </div>
   </div>
 
+  <!-- Add Ingredient Modal -->
+  <div class="modal-overlay" id="ing-add-overlay">
+    <div class="modal ing-add-modal">
+      <div class="modal-title">Add Ingredient</div>
+      <input type="text" id="ing-add-search" class="ing-add-search" placeholder="Search ingredients..." autocomplete="off">
+      <div class="ing-add-results" id="ing-add-results"></div>
+      <div class="ing-add-amount-wrap" id="ing-add-amount-wrap" style="display:none">
+        <div class="ing-edit-name" id="ing-add-selected"></div>
+        <label>Amount</label>
+        <div class="amount-stepper">
+          <button type="button" class="stepper-btn" id="ing-add-down">&minus;</button>
+          <input type="text" id="ing-add-amount" class="stepper-input" inputmode="decimal" value="1">
+          <button type="button" class="stepper-btn" id="ing-add-up">+</button>
+        </div>
+        <label for="ing-add-unit">Unit</label>
+        <select id="ing-add-unit"></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="ing-add-save" disabled>Add</button>
+        <button class="btn btn-secondary" id="ing-add-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Scope Confirm Modal -->
   <div class="modal-overlay" id="ing-scope-overlay">
     <div class="modal">
@@ -414,6 +438,6 @@
 
   <script src="meals.js?v=10"></script>
   <script src="nutrition.js?v=12"></script>
-  <script src="app.js?v=14"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>

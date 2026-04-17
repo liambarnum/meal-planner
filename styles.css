@@ -1013,6 +1013,110 @@ body {
   color: var(--gold);
   background: var(--gold-dim);
 }
+.ingredient-delete-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  vertical-align: middle;
+}
+.ingredient-delete-badge:hover {
+  border-color: #d66;
+  color: #d66;
+  background: rgba(221, 102, 102, 0.1);
+}
+.ingredient-add-btn {
+  margin-top: 8px;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  padding: 5px 10px;
+  transition: all var(--transition);
+}
+.ingredient-add-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  border-style: solid;
+}
+.ing-add-modal {
+  max-width: 420px;
+}
+.ing-add-search {
+  width: 100%;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: #000;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+.ing-add-search:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.ing-add-results {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ing-add-result {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.ing-add-result:hover {
+  background: var(--gold-dim);
+  color: var(--gold);
+}
+.ing-add-result-selected {
+  background: var(--gold-dim);
+  color: var(--gold);
+  font-weight: 600;
+}
+.ing-add-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 12px;
+  text-align: center;
+  font-style: italic;
+}
+.ing-add-amount-wrap {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-bottom: 6px;
+}
 .ing-edit-name {
   font-weight: 600;
   color: var(--gold);

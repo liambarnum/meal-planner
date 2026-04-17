@@ -89,6 +89,7 @@ function init() {
   bindNutritionDelegation();
   bindDeleteModal();
   bindIngredientEditModal();
+  bindIngredientAddModal();
   registerSW();
 }
 
@@ -170,19 +171,32 @@ function getMeal(id) {
   return state.masterMeals.find(m => m.id === id);
 }
 
-// Returns a shallow-cloned meal with ingredient amounts resolved through
+// Returns a shallow-cloned meal with ingredients resolved through
 // mealEdits (global) and, if assignmentKey is provided, assignmentOverrides (per-slot).
+// Supports amount edits (key → string), additions (_added: [ing]) and removals (_removed: [name]).
 function getEffectiveMeal(mealId, assignmentKey) {
   const base = getMeal(mealId);
   if (!base) return null;
   const edits = state.mealEdits[mealId] || {};
   const overrides = assignmentKey ? (state.assignmentOverrides[assignmentKey] || {}) : {};
-  const ingredients = base.ingredients.map(ing => {
-    if (overrides[ing.name] !== undefined) return { ...ing, amount: overrides[ing.name] };
-    if (edits[ing.name] !== undefined) return { ...ing, amount: edits[ing.name] };
+
+  const mealAdded = edits._added || [];
+  const mealRemoved = new Set(edits._removed || []);
+  const assignAdded = overrides._added || [];
+  const assignRemoved = new Set(overrides._removed || []);
+
+  let list = [...base.ingredients, ...mealAdded].filter(ing => !mealRemoved.has(ing.name));
+  list = [...list, ...assignAdded];
+  const byName = new Map();
+  for (const ing of list) byName.set(ing.name, ing);
+  list = [...byName.values()].filter(ing => !assignRemoved.has(ing.name));
+
+  list = list.map(ing => {
+    if (typeof overrides[ing.name] === 'string') return { ...ing, amount: overrides[ing.name] };
+    if (typeof edits[ing.name] === 'string') return { ...ing, amount: edits[ing.name] };
     return ing;
   });
-  return { ...base, ingredients };
+  return { ...base, ingredients: list };
 }
 
 // Returns macros computed from ingredient-level USDA data.
@@ -450,15 +464,17 @@ function renderIngredientsList(meal, context) {
             ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="View Nutrition Facts">NF</button>`
             : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="No nutritional data currently linked with ingredient.">&#9888;</button>`;
         const editBadge = `<button class="ingredient-edit-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="Edit amount">&#9998;</button>`;
+        const deleteBadge = `<button class="ingredient-delete-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="Remove ingredient">&times;</button>`;
         return `
         <div class="ingredient-row">
           <span class="ingredient-amount">${esc(ing.amount)}</span>
           <span class="ingredient-info">
-            <span class="ingredient-name">${esc(ing.name)} ${nfBadge}${editBadge}</span>
+            <span class="ingredient-name">${esc(ing.name)} ${nfBadge}${editBadge}${deleteBadge}</span>
             ${ing.detail ? `<span class="ingredient-detail">${esc(ing.detail)}</span>` : ''}
           </span>
         </div>`;
       }).join('')}
+      <button class="ingredient-add-btn" data-meal-id="${esc(meal.id)}"${assignAttr} title="Add ingredient">+ Add Ingredient</button>
     </div>
   `;
 }
@@ -515,6 +531,31 @@ function bindIngredientsToggle(el) {
         badge.dataset.mealId,
         badge.dataset.ingredient,
         badge.dataset.assignmentKey || null
+      );
+    });
+  });
+
+  // Bind delete badges
+  el.querySelectorAll('.ingredient-delete-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      handleIngredientDelete(
+        badge.dataset.mealId,
+        badge.dataset.ingredient,
+        badge.dataset.assignmentKey || null
+      );
+    });
+  });
+
+  // Bind add-ingredient buttons
+  el.querySelectorAll('.ingredient-add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      openIngredientAddModal(
+        btn.dataset.mealId,
+        btn.dataset.assignmentKey || null
       );
     });
   });
@@ -2094,29 +2135,33 @@ function bindIngredientEditModal() {
     }
 
     // Open scope modal; defer write until user picks
-    pendingMealEdit = { mealId, ingredientName, newAmount, existingKeys };
+    pendingMealEdit = { action: 'edit', mealId, ingredientName, newAmount, existingKeys };
     document.getElementById('ing-scope-overlay').classList.add('open');
   });
 
   // Scope modal buttons
   document.getElementById('ing-scope-cancel').addEventListener('click', closeScopeModal);
   attachBackdropCloseGuard(document.getElementById('ing-scope-overlay'), closeScopeModal);
-  document.getElementById('ing-scope-retro').addEventListener('click', () => {
-    if (!pendingMealEdit) return;
-    const { mealId, ingredientName, newAmount } = pendingMealEdit;
-    applyMealEdit(mealId, ingredientName, newAmount, 'retro');
-    closeScopeModal();
+  document.getElementById('ing-scope-retro').addEventListener('click', () => dispatchScope('retro'));
+  document.getElementById('ing-scope-forward').addEventListener('click', () => dispatchScope('forward'));
+}
+
+function dispatchScope(mode) {
+  if (!pendingMealEdit) return;
+  const p = pendingMealEdit;
+  if (p.action === 'edit') {
+    applyMealEdit(p.mealId, p.ingredientName, p.newAmount, mode, p.existingKeys);
     closeIngredientEditModal();
-    renderPlanner();
-  });
-  document.getElementById('ing-scope-forward').addEventListener('click', () => {
-    if (!pendingMealEdit) return;
-    const { mealId, ingredientName, newAmount, existingKeys } = pendingMealEdit;
-    applyMealEdit(mealId, ingredientName, newAmount, 'forward', existingKeys);
-    closeScopeModal();
-    closeIngredientEditModal();
-    renderPlanner();
-  });
+  } else if (p.action === 'remove') {
+    if (mode === 'forward') applyIngredientRemoveForward(p.mealId, p.ingredientName, p.existingKeys);
+    else applyIngredientRemoveRetro(p.mealId, p.ingredientName);
+  } else if (p.action === 'add') {
+    if (mode === 'forward') applyIngredientAddForward(p.mealId, p.ingredient, p.existingKeys);
+    else applyIngredientAddRetro(p.mealId, p.ingredient);
+    closeIngredientAddModal();
+  }
+  closeScopeModal();
+  renderPlanner();
 }
 
 let pendingMealEdit = null;
@@ -2141,6 +2186,233 @@ function applyMealEdit(mealId, ingredientName, newAmount, mode, existingKeys) {
   if (!state.mealEdits[mealId]) state.mealEdits[mealId] = {};
   state.mealEdits[mealId][ingredientName] = newAmount;
   saveState();
+}
+
+/* ─── INGREDIENT DELETE ─── */
+function handleIngredientDelete(mealId, ingredientName, assignmentKey) {
+  if (assignmentKey) {
+    removeFromAssignment(assignmentKey, ingredientName);
+    renderPlanner();
+    return;
+  }
+  const existingKeys = Object.keys(state.assignments).filter(k => state.assignments[k] === mealId);
+  if (existingKeys.length === 0) {
+    applyIngredientRemoveRetro(mealId, ingredientName);
+    renderPlanner();
+    return;
+  }
+  pendingMealEdit = { action: 'remove', mealId, ingredientName, existingKeys };
+  document.getElementById('ing-scope-overlay').classList.add('open');
+}
+
+function removeFromAssignment(assignmentKey, ingredientName) {
+  if (!state.assignmentOverrides[assignmentKey]) state.assignmentOverrides[assignmentKey] = {};
+  const ov = state.assignmentOverrides[assignmentKey];
+  if ((ov._added || []).some(i => i.name === ingredientName)) {
+    ov._added = ov._added.filter(i => i.name !== ingredientName);
+  } else {
+    if (!ov._removed) ov._removed = [];
+    if (!ov._removed.includes(ingredientName)) ov._removed.push(ingredientName);
+  }
+  delete ov[ingredientName];
+  saveState();
+}
+
+function applyIngredientRemoveRetro(mealId, ingredientName) {
+  if (!state.mealEdits[mealId]) state.mealEdits[mealId] = {};
+  const me = state.mealEdits[mealId];
+  if ((me._added || []).some(i => i.name === ingredientName)) {
+    me._added = me._added.filter(i => i.name !== ingredientName);
+  } else {
+    if (!me._removed) me._removed = [];
+    if (!me._removed.includes(ingredientName)) me._removed.push(ingredientName);
+  }
+  delete me[ingredientName];
+  // Clean up any leftover per-assignment overrides for this ingredient
+  for (const key of Object.keys(state.assignmentOverrides)) {
+    if (state.assignments[key] !== mealId) continue;
+    const ov = state.assignmentOverrides[key];
+    if (ov._removed) ov._removed = ov._removed.filter(n => n !== ingredientName);
+    if (typeof ov[ingredientName] === 'string') delete ov[ingredientName];
+  }
+  saveState();
+}
+
+function applyIngredientRemoveForward(mealId, ingredientName, existingKeys) {
+  for (const key of existingKeys) {
+    if (!state.assignmentOverrides[key]) state.assignmentOverrides[key] = {};
+    const ov = state.assignmentOverrides[key];
+    if ((ov._added || []).some(i => i.name === ingredientName)) continue;
+    const eff = getEffectiveMeal(mealId, key);
+    const ing = eff && eff.ingredients.find(i => i.name === ingredientName);
+    if (!ing) continue;
+    if (!ov._added) ov._added = [];
+    ov._added.push({ name: ing.name, amount: ing.amount, section: ing.section, detail: ing.detail });
+  }
+  applyIngredientRemoveRetro(mealId, ingredientName);
+}
+
+/* ─── INGREDIENT ADD MODAL ─── */
+let ingAddCtx = null; // { mealId, assignmentKey, selectedName }
+
+function openIngredientAddModal(mealId, assignmentKey) {
+  ingAddCtx = { mealId, assignmentKey: assignmentKey || null, selectedName: null };
+  document.getElementById('ing-add-search').value = '';
+  document.getElementById('ing-add-selected').textContent = '';
+  document.getElementById('ing-add-amount').value = '1';
+  document.getElementById('ing-add-amount-wrap').style.display = 'none';
+  document.getElementById('ing-add-save').disabled = true;
+  renderIngAddResults('');
+  document.getElementById('ing-add-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('ing-add-search').focus(), 50);
+}
+
+function closeIngredientAddModal() {
+  document.getElementById('ing-add-overlay').classList.remove('open');
+  ingAddCtx = null;
+}
+
+function renderIngAddResults(query) {
+  const container = document.getElementById('ing-add-results');
+  const q = (query || '').trim().toLowerCase();
+  // Exclude ingredients already present in this meal/assignment
+  const effective = getEffectiveMeal(ingAddCtx.mealId, ingAddCtx.assignmentKey);
+  const present = new Set((effective ? effective.ingredients : []).map(i => i.name.toLowerCase()));
+  const names = getAllIngredientNames().filter(n => !present.has(n.toLowerCase()));
+  const filtered = q ? names.filter(n => n.toLowerCase().includes(q)) : names;
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="ing-add-empty">No matches. Add custom ingredients in Preferences.</div>`;
+    return;
+  }
+  container.innerHTML = filtered.slice(0, 200).map(n => {
+    const selected = ingAddCtx.selectedName === n ? ' ing-add-result-selected' : '';
+    return `<button type="button" class="ing-add-result${selected}" data-name="${esc(n)}">${esc(n)}</button>`;
+  }).join('');
+  container.querySelectorAll('.ing-add-result').forEach(btn => {
+    btn.addEventListener('click', () => selectIngAddName(btn.dataset.name));
+  });
+}
+
+function selectIngAddName(name) {
+  ingAddCtx.selectedName = name;
+  document.getElementById('ing-add-selected').textContent = name;
+
+  const unitSel = document.getElementById('ing-add-unit');
+  const units = getUnitOptionsFor(name, '');
+  // Try to use the default serving to pre-fill amount + unit
+  const defaultServing = getDefaultServing(name);
+  const parsed = parseAmount(defaultServing);
+  if (parsed.unit && !units.includes(parsed.unit)) units.unshift(parsed.unit);
+  unitSel.innerHTML = units.map(u => `<option value="${esc(u)}"${u === parsed.unit ? ' selected' : ''}>${esc(u || '—')}</option>`).join('');
+  document.getElementById('ing-add-amount').value = String(parsed.quantity || 1);
+  document.getElementById('ing-add-amount-wrap').style.display = '';
+  document.getElementById('ing-add-save').disabled = false;
+
+  // Refresh list to show selection highlight
+  renderIngAddResults(document.getElementById('ing-add-search').value);
+}
+
+function guessIngredientSection(name) {
+  for (const meal of state.masterMeals) {
+    const ing = meal.ingredients.find(i => i.name === name);
+    if (ing && ing.section) return ing.section;
+  }
+  return 'Pantry and Grains';
+}
+
+function bindIngredientAddModal() {
+  const search = document.getElementById('ing-add-search');
+  search.addEventListener('input', () => renderIngAddResults(search.value));
+
+  const amt = document.getElementById('ing-add-amount');
+  const unitSel = document.getElementById('ing-add-unit');
+  const stepBy = (delta) => {
+    const step = getAmountStep(unitSel.value);
+    const cur = parseQuantityInput(amt.value);
+    let next = (isNaN(cur) ? 0 : cur) + delta * step;
+    if (next < 0) next = 0;
+    amt.value = String(Math.round(next * 100) / 100);
+  };
+  document.getElementById('ing-add-up').addEventListener('click', () => stepBy(1));
+  document.getElementById('ing-add-down').addEventListener('click', () => stepBy(-1));
+  amt.addEventListener('blur', () => {
+    const q = parseQuantityInput(amt.value);
+    if (!isNaN(q)) amt.value = String(Math.round(q * 100) / 100);
+  });
+
+  document.getElementById('ing-add-cancel').addEventListener('click', closeIngredientAddModal);
+  attachBackdropCloseGuard(document.getElementById('ing-add-overlay'), closeIngredientAddModal);
+
+  document.getElementById('ing-add-save').addEventListener('click', () => {
+    if (!ingAddCtx || !ingAddCtx.selectedName) return;
+    const qty = parseQuantityInput(amt.value);
+    if (isNaN(qty) || qty < 0) return;
+    const unit = unitSel.value || '';
+    const amountStr = unit ? `${Math.round(qty * 100) / 100} ${unit}`.trim() : `${Math.round(qty * 100) / 100}`;
+    const ingredient = {
+      name: ingAddCtx.selectedName,
+      amount: amountStr,
+      section: guessIngredientSection(ingAddCtx.selectedName)
+    };
+    const { mealId, assignmentKey } = ingAddCtx;
+
+    if (assignmentKey) {
+      addToAssignment(assignmentKey, ingredient);
+      closeIngredientAddModal();
+      renderPlanner();
+      return;
+    }
+
+    const existingKeys = Object.keys(state.assignments).filter(k => state.assignments[k] === mealId);
+    if (existingKeys.length === 0) {
+      applyIngredientAddRetro(mealId, ingredient);
+      closeIngredientAddModal();
+      renderPlanner();
+      return;
+    }
+
+    pendingMealEdit = { action: 'add', mealId, ingredient, existingKeys };
+    document.getElementById('ing-scope-overlay').classList.add('open');
+  });
+}
+
+function addToAssignment(assignmentKey, ingredient) {
+  if (!state.assignmentOverrides[assignmentKey]) state.assignmentOverrides[assignmentKey] = {};
+  const ov = state.assignmentOverrides[assignmentKey];
+  if (ov._removed) ov._removed = ov._removed.filter(n => n !== ingredient.name);
+  if (!ov._added) ov._added = [];
+  ov._added = ov._added.filter(i => i.name !== ingredient.name);
+  ov._added.push(ingredient);
+  saveState();
+}
+
+function applyIngredientAddRetro(mealId, ingredient) {
+  if (!state.mealEdits[mealId]) state.mealEdits[mealId] = {};
+  const me = state.mealEdits[mealId];
+  if (me._removed) me._removed = me._removed.filter(n => n !== ingredient.name);
+  if (!me._added) me._added = [];
+  me._added = me._added.filter(i => i.name !== ingredient.name);
+  me._added.push(ingredient);
+  // Clear per-assignment removes for this ingredient so the retro add is visible everywhere
+  for (const key of Object.keys(state.assignmentOverrides)) {
+    if (state.assignments[key] !== mealId) continue;
+    const ov = state.assignmentOverrides[key];
+    if (ov._removed) ov._removed = ov._removed.filter(n => n !== ingredient.name);
+  }
+  saveState();
+}
+
+function applyIngredientAddForward(mealId, ingredient, existingKeys) {
+  for (const key of existingKeys) {
+    if (!state.assignmentOverrides[key]) state.assignmentOverrides[key] = {};
+    const ov = state.assignmentOverrides[key];
+    if ((ov._added || []).some(i => i.name === ingredient.name)) {
+      ov._added = ov._added.filter(i => i.name !== ingredient.name);
+    }
+    if (!ov._removed) ov._removed = [];
+    if (!ov._removed.includes(ingredient.name)) ov._removed.push(ingredient.name);
+  }
+  applyIngredientAddRetro(mealId, ingredient);
 }
 
 /* ─── START ─── */
