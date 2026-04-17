@@ -447,8 +447,8 @@ function renderIngredientsList(meal, context) {
         const has = !isSeasoning && hasNutritionData(ing.name);
         const nfBadge = isSeasoning ? ''
           : has
-            ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="View Nutrition Facts">NF</button>`
-            : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}" title="No nutritional data currently linked with ingredient.">&#9888;</button>`;
+            ? `<button class="ingredient-nf-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="View Nutrition Facts">NF</button>`
+            : `<button class="ingredient-no-nutrition" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="No nutritional data currently linked with ingredient.">&#9888;</button>`;
         const editBadge = `<button class="ingredient-edit-badge" data-meal-id="${esc(meal.id)}" data-ingredient="${esc(ing.name)}"${assignAttr} title="Edit amount">&#9998;</button>`;
         return `
         <div class="ingredient-row">
@@ -485,11 +485,9 @@ function bindIngredientsToggle(el) {
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      const mealId = badge.dataset.mealId;
-      const ingName = badge.dataset.ingredient;
-      const meal = getMeal(mealId);
+      const meal = getEffectiveMeal(badge.dataset.mealId, badge.dataset.assignmentKey || null);
       if (meal) {
-        const ing = meal.ingredients.find(i => i.name === ingName);
+        const ing = meal.ingredients.find(i => i.name === badge.dataset.ingredient);
         if (ing) openIngredientNutritionModal(ing, true);
       }
     });
@@ -500,11 +498,9 @@ function bindIngredientsToggle(el) {
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      const mealId = badge.dataset.mealId;
-      const ingName = badge.dataset.ingredient;
-      const meal = getMeal(mealId);
+      const meal = getEffectiveMeal(badge.dataset.mealId, badge.dataset.assignmentKey || null);
       if (meal) {
-        const ing = meal.ingredients.find(i => i.name === ingName);
+        const ing = meal.ingredients.find(i => i.name === badge.dataset.ingredient);
         if (ing) openIngredientNutritionModal(ing);
       }
     });
