@@ -73,9 +73,9 @@ function getDateRange() {
 /* ─── INIT ─── */
 function init() {
   loadState();
-  if (!state.dateRangeStart) {
-    state.dateRangeStart = todayISO();
-  }
+  // Always reset the date range to today + 7 days on app open
+  state.dateRangeStart = todayISO();
+  state.dateRangeLength = 7;
   state.masterMeals = JSON.parse(JSON.stringify(MEALS));
   mergeSavedMeals();
   renderDayTabs();
