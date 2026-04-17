@@ -1043,10 +1043,10 @@ body {
 .stepper-input {
   flex: 1;
   text-align: center;
-  background: transparent;
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  color: var(--text);
+  color: #000;
   font-family: var(--font-body);
   font-size: 0.95rem;
   padding: 6px 10px;
@@ -1076,10 +1076,10 @@ body {
 }
 .nf-serving-stepper .nf-serving-unit {
   margin-left: 6px;
-  background: transparent;
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  color: var(--text);
+  color: #000;
   padding: 6px 10px;
   font-family: var(--font-body);
   font-size: 0.9rem;
