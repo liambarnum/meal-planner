@@ -50,7 +50,14 @@
       "Bash(lsof -ti:8000)",
       "Bash(python3 -m http.server 8000)",
       "Bash(lsof -iTCP:8000 -sTCP:LISTEN -n -P)",
-      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:8000/index.html)"
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:8000/index.html)",
+      "Bash(grep -c '\\\\${' /Users/liam/meal-planner/culinary-principles.md)",
+      "Bash(grep -c '`' /Users/liam/meal-planner/culinary-principles.md)",
+      "Bash(grep -c '\\\\\\\\${' /Users/liam/meal-planner/culinary-principles.md)",
+      "Bash(grep -c '\\\\`' /Users/liam/meal-planner/culinary-principles.md)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:8000/culinary-data.js)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:8000/data/ingredient-tags.json)",
+      "Bash(node --check /Users/liam/meal-planner/app.js)"
     ]
   },
   "hooks": {

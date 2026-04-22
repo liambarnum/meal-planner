@@ -2143,3 +2143,32 @@ body {
 }
 .custom-meal-sel-remove:hover { color: #c85a5a; }
 
+.custom-meal-warning {
+  background: rgba(212, 165, 74, 0.1);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 0.82rem;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.meal-card-audit-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-left: 6px;
+}
+.meal-card-audit-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+
