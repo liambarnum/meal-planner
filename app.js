@@ -90,6 +90,7 @@ function init() {
   bindDeleteModal();
   bindIngredientEditModal();
   bindIngredientAddModal();
+  bindCustomMealModal();
   registerSW();
 }
 
@@ -407,6 +408,13 @@ function renderPlanner(expandCategory) {
 
 function renderAllMeals(container, expandCategory) {
   container.innerHTML = '';
+
+  const createBtn = document.createElement('button');
+  createBtn.className = 'create-custom-meal-btn';
+  createBtn.textContent = '+ Create Custom Meal';
+  createBtn.addEventListener('click', openCustomMealModal);
+  container.appendChild(createBtn);
+
   const categories = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
 
   // When an expandCategory is specified, collapse all others and expand just that one
@@ -2413,6 +2421,222 @@ function applyIngredientAddForward(mealId, ingredient, existingKeys) {
     if (!ov._removed.includes(ingredient.name)) ov._removed.push(ingredient.name);
   }
   applyIngredientAddRetro(mealId, ingredient);
+}
+
+/* ─── CUSTOM MEAL CREATION ─── */
+// Small explicit list of produce items that should be bucketed as Fruit.
+// Everything else in Produce goes to Vegetable (avocado/tomato/olives intentionally stay as veg).
+const FRUIT_NAMES = new Set([
+  'apple','apples','banana','bananas','blueberry','blueberries','strawberry','strawberries',
+  'raspberry','raspberries','blackberry','blackberries','orange','oranges','grape','grapes',
+  'pear','pears','peach','peaches','pineapple','mango','mangoes','watermelon','cantaloupe',
+  'honeydew','melon','kiwi','cherry','cherries','plum','plums','lemon','lemons','lime','limes',
+  'pomegranate','apricot','apricots','fig','figs','date','dates','grapefruit','papaya','nectarine'
+]);
+
+// Returns one of 'protein' | 'starch' | 'vegetable' | 'fruit' | 'other', or null to skip.
+function classifyIngredient(name, section) {
+  if (section === 'Seasonings') return null;
+  // Protein rule: >= 10g protein per default serving wins regardless of section.
+  try {
+    const defaultServing = getDefaultServing(name);
+    const nut = computeIngredientNutrition({ name, amount: defaultServing });
+    if (nut && typeof nut.protein === 'number' && nut.protein >= 10) return 'protein';
+  } catch (e) { /* fall through to section-based mapping */ }
+
+  if (section === 'Pantry and Grains') return 'starch';
+  if (section === 'Produce') {
+    const key = (name || '').toLowerCase().trim();
+    if (FRUIT_NAMES.has(key)) return 'fruit';
+    return 'vegetable';
+  }
+  return 'other';
+}
+
+// In-modal draft state.
+let customMealDraft = null; // { ingredients: [{name, amount, section}] }
+let customMealBucketsCollapsed = { protein: true, starch: true, vegetable: true, fruit: true, other: true };
+
+function openCustomMealModal() {
+  customMealDraft = { ingredients: [] };
+  customMealBucketsCollapsed = { protein: true, starch: true, vegetable: true, fruit: true, other: true };
+  document.getElementById('custom-meal-name').value = '';
+  document.getElementById('custom-meal-desc').value = '';
+  document.getElementById('custom-meal-category').value = 'Breakfast';
+  renderCustomMealBuckets();
+  renderCustomMealSelected();
+  document.getElementById('custom-meal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('custom-meal-name').focus(), 50);
+}
+
+function closeCustomMealModal() {
+  document.getElementById('custom-meal-overlay').classList.remove('open');
+  customMealDraft = null;
+}
+
+function getCustomMealBuckets() {
+  const buckets = { protein: [], starch: [], vegetable: [], fruit: [], other: [] };
+  const names = getAllIngredientNames();
+  for (const name of names) {
+    const section = guessIngredientSection(name);
+    const bucket = classifyIngredient(name, section);
+    if (!bucket) continue;
+    buckets[bucket].push(name);
+  }
+  // Sort alphabetically within each bucket
+  for (const k of Object.keys(buckets)) buckets[k].sort((a, b) => a.localeCompare(b));
+  return buckets;
+}
+
+function renderCustomMealBuckets() {
+  const container = document.getElementById('custom-meal-buckets');
+  const buckets = getCustomMealBuckets();
+  const labels = {
+    protein: 'Protein',
+    starch: 'Starch / Grain',
+    vegetable: 'Vegetable',
+    fruit: 'Fruit',
+    other: 'Other'
+  };
+  const order = ['protein', 'starch', 'vegetable', 'fruit', 'other'];
+  const selectedNames = new Set((customMealDraft.ingredients || []).map(i => i.name));
+
+  container.innerHTML = order.map(key => {
+    const collapsed = customMealBucketsCollapsed[key];
+    const items = buckets[key] || [];
+    const body = items.length === 0
+      ? `<div class="custom-meal-bucket-empty">No ingredients available.</div>`
+      : items.map(n => {
+          const sel = selectedNames.has(n) ? ' selected' : '';
+          return `<button type="button" class="custom-meal-chip${sel}" data-name="${esc(n)}">${esc(n)}</button>`;
+        }).join('');
+    return `
+      <div class="custom-meal-bucket">
+        <div class="custom-meal-bucket-header" data-bucket="${key}">
+          <span>${labels[key]} <span style="color:var(--text-muted);font-weight:400">(${items.length})</span></span>
+          <span class="custom-meal-bucket-toggle">${collapsed ? '▶' : '▼'}</span>
+        </div>
+        <div class="custom-meal-bucket-body${collapsed ? ' collapsed' : ''}" data-bucket-body="${key}">
+          ${body}
+        </div>
+      </div>`;
+  }).join('');
+
+  container.querySelectorAll('.custom-meal-bucket-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const key = h.dataset.bucket;
+      customMealBucketsCollapsed[key] = !customMealBucketsCollapsed[key];
+      renderCustomMealBuckets();
+    });
+  });
+  container.querySelectorAll('.custom-meal-chip').forEach(btn => {
+    btn.addEventListener('click', () => toggleCustomMealIngredient(btn.dataset.name));
+  });
+}
+
+function toggleCustomMealIngredient(name) {
+  const idx = customMealDraft.ingredients.findIndex(i => i.name === name);
+  if (idx >= 0) {
+    customMealDraft.ingredients.splice(idx, 1);
+  } else {
+    const defaultServing = getDefaultServing(name);
+    customMealDraft.ingredients.push({
+      name,
+      amount: defaultServing || '1',
+      section: guessIngredientSection(name)
+    });
+  }
+  renderCustomMealBuckets();
+  renderCustomMealSelected();
+}
+
+function renderCustomMealSelected() {
+  const container = document.getElementById('custom-meal-selected');
+  const items = customMealDraft.ingredients || [];
+  if (items.length === 0) {
+    container.innerHTML = `<div class="custom-meal-selected-empty">No ingredients yet — pick from a bucket above.</div>`;
+    return;
+  }
+  container.innerHTML = items.map((ing, i) => {
+    const parsed = parseAmount(ing.amount);
+    const units = getUnitOptionsFor(ing.name, parsed.unit || '');
+    if (parsed.unit && !units.includes(parsed.unit)) units.unshift(parsed.unit);
+    const unitOpts = units.map(u => `<option value="${esc(u)}"${u === (parsed.unit || '') ? ' selected' : ''}>${esc(u || '—')}</option>`).join('');
+    return `
+      <div class="custom-meal-sel-row" data-idx="${i}">
+        <input type="text" class="custom-meal-sel-amount" data-idx="${i}" inputmode="decimal" value="${esc(String(parsed.quantity || 1))}">
+        <select class="custom-meal-sel-unit" data-idx="${i}">${unitOpts}</select>
+        <span class="custom-meal-sel-name">${esc(ing.name)}</span>
+        <button type="button" class="custom-meal-sel-remove" data-idx="${i}" title="Remove">&times;</button>
+      </div>`;
+  }).join('');
+
+  container.querySelectorAll('.custom-meal-sel-amount').forEach(input => {
+    input.addEventListener('blur', () => updateCustomMealAmount(Number(input.dataset.idx), input.value, null));
+  });
+  container.querySelectorAll('.custom-meal-sel-unit').forEach(sel => {
+    sel.addEventListener('change', () => updateCustomMealAmount(Number(sel.dataset.idx), null, sel.value));
+  });
+  container.querySelectorAll('.custom-meal-sel-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.idx);
+      customMealDraft.ingredients.splice(idx, 1);
+      renderCustomMealBuckets();
+      renderCustomMealSelected();
+    });
+  });
+}
+
+function updateCustomMealAmount(idx, newQuantityRaw, newUnit) {
+  const ing = customMealDraft.ingredients[idx];
+  if (!ing) return;
+  const current = parseAmount(ing.amount);
+  let qty = current.quantity;
+  if (newQuantityRaw !== null && newQuantityRaw !== undefined) {
+    const parsed = parseQuantityInput(newQuantityRaw);
+    if (!isNaN(parsed) && parsed >= 0) qty = Math.round(parsed * 100) / 100;
+  }
+  const unit = (newUnit !== null && newUnit !== undefined) ? newUnit : (current.unit || '');
+  ing.amount = unit ? `${qty} ${unit}`.trim() : `${qty}`;
+  // Repaint selected list so the input reflects the normalized value.
+  renderCustomMealSelected();
+}
+
+function generateCustomMealId(name) {
+  const slug = (name || 'custom-meal').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'custom-meal';
+  return `custom-${slug}-${Date.now()}`;
+}
+
+function saveCustomMeal() {
+  if (!customMealDraft) return;
+  const name = document.getElementById('custom-meal-name').value.trim();
+  const category = document.getElementById('custom-meal-category').value;
+  const description = document.getElementById('custom-meal-desc').value.trim();
+  if (!name) {
+    alert('Please enter a meal name.');
+    return;
+  }
+  if (!category) {
+    alert('Please pick a category.');
+    return;
+  }
+  const meal = {
+    id: generateCustomMealId(name),
+    name,
+    description,
+    category,
+    ingredients: customMealDraft.ingredients.map(i => ({ name: i.name, amount: i.amount, section: i.section }))
+  };
+  state.masterMeals.push(meal);
+  saveState();
+  closeCustomMealModal();
+  renderPlanner();
+}
+
+function bindCustomMealModal() {
+  document.getElementById('custom-meal-cancel').addEventListener('click', closeCustomMealModal);
+  document.getElementById('custom-meal-save').addEventListener('click', saveCustomMeal);
+  attachBackdropCloseGuard(document.getElementById('custom-meal-overlay'), closeCustomMealModal);
 }
 
 /* ─── START ─── */

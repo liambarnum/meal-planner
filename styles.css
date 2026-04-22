@@ -1972,3 +1972,174 @@ body {
   .tier-label { width: 50px; min-width: 50px; font-size: 0.85rem; }
   .tier-chip { font-size: 0.75rem; padding: 5px 10px; }
 }
+
+/* ─── CREATE CUSTOM MEAL ─── */
+.create-custom-meal-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 22px;
+  margin-bottom: 18px;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 2px 8px rgba(212, 165, 74, 0.2);
+}
+.create-custom-meal-btn:hover {
+  background: var(--gold-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(212, 165, 74, 0.3);
+}
+
+.custom-meal-modal {
+  max-width: 480px;
+}
+.custom-meal-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+.custom-meal-input:focus { outline: none; border-color: var(--gold); }
+
+.custom-meal-buckets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.custom-meal-bucket {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.custom-meal-bucket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+}
+.custom-meal-bucket-header:hover { background: var(--gold-dim); color: var(--gold); }
+.custom-meal-bucket-toggle { color: var(--text-muted); font-size: 0.75rem; }
+.custom-meal-bucket-body {
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+}
+.custom-meal-bucket-body.collapsed { display: none; }
+.custom-meal-bucket-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+  padding: 4px 2px;
+}
+.custom-meal-chip {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.custom-meal-chip:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.custom-meal-chip.selected {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border-color: var(--gold);
+  font-weight: 600;
+}
+
+.custom-meal-selected-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.custom-meal-selected {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  margin-bottom: 12px;
+  min-height: 48px;
+  background: var(--bg);
+}
+.custom-meal-selected-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+  text-align: center;
+  padding: 10px;
+}
+.custom-meal-sel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.custom-meal-sel-row:last-child { border-bottom: none; }
+.custom-meal-sel-amount {
+  width: 56px;
+  padding: 4px 6px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: #000;
+  font-size: 0.82rem;
+  text-align: center;
+}
+.custom-meal-sel-unit {
+  padding: 4px 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.82rem;
+  max-width: 110px;
+}
+.custom-meal-sel-name {
+  flex: 1;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+.custom-meal-sel-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 6px;
+  line-height: 1;
+}
+.custom-meal-sel-remove:hover { color: #c85a5a; }
+
