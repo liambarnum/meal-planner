@@ -2434,20 +2434,41 @@ const FRUIT_NAMES = new Set([
   'pomegranate','apricot','apricots','fig','figs','date','dates','grapefruit','papaya','nectarine'
 ]);
 
+// Aromatics / acidic flavorings used in small amounts — treat as seasoning and hide from buckets
+// regardless of which section the meal author put them in. Substring match (lowercase).
+const AROMATIC_SKIP_SUBSTRINGS = [
+  'garlic', 'ginger', 'rosemary', 'thyme', 'basil', 'oregano',
+  'cilantro', 'parsley', 'sage', 'dill', 'chive', 'tarragon',
+  'bay leaf', 'lemon juice', 'lime juice', 'vinegar'
+];
+
+// Explicit protein overrides. Some culinary proteins (like a single egg) have <10g protein per
+// default serving but users still think of them as proteins.
+const PROTEIN_OVERRIDES = new Set(['eggs', 'egg', 'egg whites', 'egg white']);
+
 // Returns one of 'protein' | 'starch' | 'vegetable' | 'fruit' | 'other', or null to skip.
 function classifyIngredient(name, section) {
   if (section === 'Seasonings') return null;
-  // Protein rule: >= 10g protein per default serving wins regardless of section.
+  const lower = (name || '').toLowerCase().trim();
+
+  for (const sub of AROMATIC_SKIP_SUBSTRINGS) {
+    if (lower.includes(sub)) return null;
+  }
+
+  if (PROTEIN_OVERRIDES.has(lower)) return 'protein';
+
+  // Grain section wins over the protein rule so rice/lentils/etc. stay as Starch/Grain.
+  if (section === 'Pantry and Grains') return 'starch';
+
   try {
     const defaultServing = getDefaultServing(name);
     const nut = computeIngredientNutrition({ name, amount: defaultServing });
     if (nut && typeof nut.protein === 'number' && nut.protein >= 10) return 'protein';
   } catch (e) { /* fall through to section-based mapping */ }
 
-  if (section === 'Pantry and Grains') return 'starch';
   if (section === 'Produce') {
-    const key = (name || '').toLowerCase().trim();
-    if (FRUIT_NAMES.has(key)) return 'fruit';
+    if (lower.includes('berry') || lower.includes('berries')) return 'fruit';
+    if (FRUIT_NAMES.has(lower)) return 'fruit';
     return 'vegetable';
   }
   return 'other';
@@ -2476,14 +2497,21 @@ function closeCustomMealModal() {
 
 function getCustomMealBuckets() {
   const buckets = { protein: [], starch: [], vegetable: [], fruit: [], other: [] };
-  const names = getAllIngredientNames();
+  const rawNames = getAllIngredientNames();
+  const seen = new Set();
+  const names = [];
+  for (const n of rawNames) {
+    const key = n.toLowerCase().trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(n);
+  }
   for (const name of names) {
     const section = guessIngredientSection(name);
     const bucket = classifyIngredient(name, section);
     if (!bucket) continue;
     buckets[bucket].push(name);
   }
-  // Sort alphabetically within each bucket
   for (const k of Object.keys(buckets)) buckets[k].sort((a, b) => a.localeCompare(b));
   return buckets;
 }
